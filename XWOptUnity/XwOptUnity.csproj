@@ -7,8 +7,8 @@
     <ProjectGuid>{888DEA76-789A-471E-A369-887EEEB4B53C}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SchmooTech.XwOptUnity</RootNamespace>
-    <AssemblyName>SchmooTech.XwOptUnity</AssemblyName>
+    <RootNamespace>SchmooTech.XWOptUnity</RootNamespace>
+    <AssemblyName>SchmooTech.XWOptUnity</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile>Unity Subset v3.5</TargetFrameworkProfile>
@@ -41,7 +41,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="XwOptUnity.cs" />
+    <Compile Include="XWOptUnity.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

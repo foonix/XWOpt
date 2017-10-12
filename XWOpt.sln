@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XWOpt", "XwOpt\XWOpt.csproj", "{C5E184C7-536B-4B09-994B-AD2B60948597}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XWOpt", "XWOpt\XWOpt.csproj", "{C5E184C7-536B-4B09-994B-AD2B60948597}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XwOpt_test", "XwOpt_test\XwOpt_test.csproj", "{9B732252-375E-4DA7-89B5-0D381B3FEE24}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XWOpt_test", "XWOpt_test\XWOpt_test.csproj", "{9B732252-375E-4DA7-89B5-0D381B3FEE24}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XwOptUnity", "XwOptUnity\XwOptUnity.csproj", "{888DEA76-789A-471E-A369-887EEEB4B53C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XWOptUnity", "XWOptUnity\XWOptUnity.csproj", "{888DEA76-789A-471E-A369-887EEEB4B53C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
