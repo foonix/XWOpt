@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace SchmooTech.XWOpt
 {
@@ -11,7 +12,7 @@ namespace SchmooTech.XWOpt
 
         public Action<string> logger;
 
-        public OptNode.BaseNode rootNode;
+        public List<OptNode.BaseNode> rootNodes;
 
         public OptFile(string fileName, Action<string> logger = null) : base(File.OpenRead(fileName))
         {
