@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SchmooTech.XWOpt;
+﻿using SchmooTech.XWOpt;
 using NUnit.Framework;
 
 namespace XWOpt_test
