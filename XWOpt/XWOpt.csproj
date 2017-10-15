@@ -56,9 +56,8 @@
     <Compile Include="OptNode\VertexNormals.cs" />
     <Compile Include="OptNode\VertexUV.cs" />
     <Compile Include="OptReader.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Properties\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

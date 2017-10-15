@@ -22,7 +22,7 @@ namespace SchmooTech.XWOpt
 
             using (var reader = new OptReader(File.OpenRead(fileName), logger))
             {
-
+                reader.ReadHeader();
                 globalOffset = reader.globalOffset;
                 version = reader.version;
 

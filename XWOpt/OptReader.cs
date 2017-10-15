@@ -24,7 +24,10 @@ namespace SchmooTech.XWOpt
         internal OptReader(Stream stream, Action<string> logger) : base(stream)
         {
             this.logger = logger;
+        }
 
+        internal void ReadHeader()
+        {
             // Version is stored as negative int.
             version = -ReadInt32();
 
@@ -169,7 +172,7 @@ namespace SchmooTech.XWOpt
             Seek(offset);
             if (RealOffset(offset) != BaseStream.Position)
             {
-                logger(String.Format("Warning: skipping unexpected {0} bytes at {X:1}", RealOffset(offset) - BaseStream.Position, BaseStream.Position));
+                logger(String.Format("Warning: skipping unexpected {0} bytes at {1:X}", RealOffset(offset) - BaseStream.Position, BaseStream.Position));
             }
         }
 
