@@ -5,7 +5,7 @@ namespace SchmooTech.XWOpt.OptNode
 {
     public class MeshVerticies : BaseNode
     {
-        public MeshVerticies(OptFile opt) : base(opt)
+        internal MeshVerticies(OptReader opt) : base(opt)
         {
 
         }

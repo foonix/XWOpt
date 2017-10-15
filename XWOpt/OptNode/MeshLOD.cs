@@ -7,7 +7,7 @@ namespace SchmooTech.XWOpt.OptNode
 {
     public class MeshLOD : BaseNode
     {
-        public MeshLOD(OptFile opt) : base(opt)
+        internal MeshLOD(OptReader opt) : base(opt)
         {
 
         }

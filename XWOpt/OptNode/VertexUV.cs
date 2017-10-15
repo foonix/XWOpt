@@ -6,7 +6,7 @@ namespace SchmooTech.XWOpt.OptNode
 {
     public class VertexUV : BaseNode
     {
-        public VertexUV(OptFile opt) : base(opt)
+        internal VertexUV(OptReader opt) : base(opt)
         {
 
         }

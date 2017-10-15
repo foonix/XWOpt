@@ -7,7 +7,7 @@ namespace SchmooTech.XWOpt.OptNode
 {
     public class VertexNormals : BaseNode
     {
-        public VertexNormals(OptFile opt) : base(opt)
+        internal VertexNormals(OptReader opt) : base(opt)
         {
 
         }

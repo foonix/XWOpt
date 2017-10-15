@@ -6,7 +6,7 @@ namespace SchmooTech.XWOpt.OptNode.Types
 {
     public enum GenericMinor
     {
-        generic = 0,
+        branch = 0,
         faceList = 1,
         mainJump = 2,
         meshVertex = 3,

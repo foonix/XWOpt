@@ -7,7 +7,7 @@ namespace SchmooTech.XWOpt.OptNode
 {
     public class SkinSelector : BaseNode
     {
-        public SkinSelector(OptFile opt) : base(opt)
+        internal SkinSelector(OptReader opt) : base(opt)
         {
 
         }

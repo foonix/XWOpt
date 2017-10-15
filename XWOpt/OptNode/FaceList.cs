@@ -7,7 +7,7 @@ namespace SchmooTech.XWOpt.OptNode
 {
     public class FaceList : BaseNode
     {
-        public FaceList(OptFile opt) : base(opt)
+        internal FaceList(OptReader opt) : base(opt)
         {
 
         }

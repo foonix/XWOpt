@@ -43,7 +43,7 @@ namespace SchmooTech.XWOpt.OptNode
 
     public class PartDescriptor : BaseNode
     {
-        public PartDescriptor(OptFile opt) : base(opt)
+        internal PartDescriptor(OptReader opt) : base(opt)
         {
 
         }

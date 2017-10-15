@@ -40,6 +40,7 @@
   <ItemGroup>
     <Compile Include="OptFile.cs" />
     <Compile Include="OptNode\BaseNode.cs" />
+    <Compile Include="OptNode\BranchNode.cs" />
     <Compile Include="OptNode\FaceList.cs" />
     <Compile Include="OptNode\Hardpoint.cs" />
     <Compile Include="OptNode\MeshLOD.cs" />
@@ -54,6 +55,7 @@
     <Compile Include="OptNode\Types\TextureMinor.cs" />
     <Compile Include="OptNode\VertexNormals.cs" />
     <Compile Include="OptNode\VertexUV.cs" />
+    <Compile Include="OptReader.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

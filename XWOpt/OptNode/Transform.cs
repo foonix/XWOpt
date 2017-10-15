@@ -7,7 +7,7 @@ namespace SchmooTech.XWOpt.OptNode
 {
     public class Transform : BaseNode
     {
-        public Transform(OptFile opt) : base(opt)
+        internal Transform(OptReader opt) : base(opt)
         {
 
         }
