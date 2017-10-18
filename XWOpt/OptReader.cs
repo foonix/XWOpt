@@ -11,35 +11,18 @@ namespace SchmooTech.XWOpt
     /// </summary>
     internal class OptReader : BinaryReader
     {
-        // OptFile tracks this, but OptReader also needs to know it.
-        public int globalOffset = 0;
-        public int version = 0;
-        Action<string> logger;
+        internal OptFile opt;
+        internal Action<string> logger;
 
         /// <summary>
         /// Helper for reading Opt file strcutures.  Readers initial top level headers required for reading the rest of the file.
         /// </summary>
         /// <param name="stream"></param>
         /// <param name="logger"></param>
-        internal OptReader(Stream stream, Action<string> logger) : base(stream)
+        internal OptReader(Stream stream, OptFile opt, Action<string> logger) : base(stream)
         {
             this.logger = logger;
-        }
-
-        internal void ReadHeader()
-        {
-            // Version is stored as negative int.
-            version = -ReadInt32();
-
-            // Sanity check file size.
-            int size = ReadInt32() + 8;
-            if (size != BaseStream.Length)
-            {
-                logger(String.Format("File length expected is {0} but actual lenght is {1}.  File may be corrupt.", size, BaseStream.Length));
-            }
-
-            // The bytes preceding this don't count when calculating the offset.
-            globalOffset = ReadInt32() - 8;
+            this.opt = opt;
         }
 
         internal List<BaseNode> ReadChildren()
@@ -78,7 +61,7 @@ namespace SchmooTech.XWOpt
             // This may not work if globalOffset is 0.
             // Should be a pointer to an offset containing string "Tex00000" or similar.
             int peek = ReadInt32();
-            if (majorId > globalOffset && minorId == (long)Major.textrue)
+            if (majorId > opt.globalOffset && minorId == (long)Major.textrue)
             {
                 preHeaderOffset = majorId;
                 majorId = minorId;
@@ -145,7 +128,7 @@ namespace SchmooTech.XWOpt
         /// <returns>Physical file address</returns>
         internal long RealOffset(int offset)
         {
-            return offset - globalOffset;
+            return offset - opt.globalOffset;
         }
 
         /// <summary>
@@ -155,7 +138,7 @@ namespace SchmooTech.XWOpt
         /// <returns>Position to be stored.</returns>
         internal long FakeOffset(int offset)
         {
-            return offset + globalOffset;
+            return offset + opt.globalOffset;
         }
 
         /// <summary>Follow a pointer read from the file.</summary>
@@ -180,6 +163,29 @@ namespace SchmooTech.XWOpt
         internal void Seek(int offset)
         {
             BaseStream.Seek(RealOffset(offset), SeekOrigin.Begin);
+        }
+
+        internal void SeekShouldPointHere(int offset)
+        {
+            if(RealOffset(offset) != BaseStream.Position)
+            {
+                logger(String.Format("Warning: Skipping unkown data near {0:X}", BaseStream.Position));
+                Seek(offset);
+            }
+        }
+
+        /// <summary>
+        /// Reads an int for which we don't know what the value is supposed to be used for.
+        /// Logs a warning if it does not contain the value we normally see.
+        /// </summary>
+        /// <param name="expected">The expected value</param>
+        internal void ReadUnknownUseValue(int expected)
+        {
+            int found = ReadInt32();
+            if (found != expected)
+            {
+                logger(String.Format("Unknown use field normally containing {0:X} contains {1:X} at {2:X}", found, expected, BaseStream.Position));
+            }
         }
     }
 }

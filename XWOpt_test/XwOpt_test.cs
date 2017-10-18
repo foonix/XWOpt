@@ -18,7 +18,11 @@ namespace XWOpt_test
         [Test]
         public void XWOpt_Read()
         {
-            opt = new OptFile(fileName);
+            opt = new OptFile() {
+                logger = msg => TestContext.Out.WriteLine(msg),
+                Vector3Type = typeof(System.Numerics.Vector3)
+            };
+            opt.Read(fileName);
         }
     }
 }

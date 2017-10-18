@@ -43,9 +43,20 @@ namespace SchmooTech.XWOpt.OptNode
 
     public class Hardpoint : BaseNode
     {
-        internal Hardpoint(OptReader opt) : base(opt)
-        {
+        public HardpointType type;
+        public Object coords;
 
+        internal Hardpoint(OptReader reader) : base(reader)
+        {
+            reader.ReadUnknownUseValue(0);
+            reader.ReadUnknownUseValue(0);
+            reader.ReadUnknownUseValue(1);
+
+            reader.FollowPointerToNextByte();
+
+            type = (HardpointType)reader.ReadUInt32();
+
+            coords = reader.opt.vector3Cotr.Invoke(new object[] { reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle() });
         }
     }
 }

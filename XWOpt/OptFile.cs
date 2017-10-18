@@ -2,6 +2,7 @@
 using System.IO;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace SchmooTech.XWOpt
 {
@@ -13,18 +14,44 @@ namespace SchmooTech.XWOpt
 
         public Action<string> logger;
 
-        public OptFile(string fileName, Action<string> logger = null)
+        private Type vector3Type;
+        internal ConstructorInfo vector3Cotr;
+        public Type Vector3Type
         {
-            if (null != logger)
+            get => vector3Type;
+            set
             {
-                this.logger = logger;
+                vector3Type = value;
+                vector3Cotr = vector3Type.GetConstructor(new Type[] { typeof(float), typeof(float), typeof(float) });
             }
+        }
 
-            using (var reader = new OptReader(File.OpenRead(fileName), logger))
+        public class Vector3
+        {
+            public float x, y, z;
+            public Vector3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; }
+        }
+
+        public OptFile() {
+            Vector3Type = typeof(Vector3);
+        }
+
+        public void Read(string fileName)
+        {
+            using (var reader = new OptReader(File.OpenRead(fileName), this, logger))
             {
-                reader.ReadHeader();
-                globalOffset = reader.globalOffset;
-                version = reader.version;
+                // Version is stored as negative int.
+                version = -reader.ReadInt32();
+
+                // Sanity check file size.
+                int size = reader.ReadInt32() + 8;
+                if (size != reader.BaseStream.Length)
+                {
+                    logger(String.Format("File length expected is {0} but actual lenght is {1}.  File may be corrupt.", size, reader.BaseStream.Length));
+                }
+
+                // The bytes preceding this don't count when calculating the offset.
+                globalOffset = reader.ReadInt32() - 8;
 
                 // Always 2 in TIE98
                 Debug.Assert(reader.ReadInt16() == 2);
