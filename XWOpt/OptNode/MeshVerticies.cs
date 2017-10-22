@@ -1,9 +1,6 @@
-﻿using System;
-using System.IO;
-
-namespace SchmooTech.XWOpt.OptNode
+﻿namespace SchmooTech.XWOpt.OptNode
 {
-    public class MeshVerticies : BaseNode
+    public class MeshVerticies<Vector3T> : BaseNode
     {
         internal MeshVerticies(OptReader opt) : base(opt)
         {

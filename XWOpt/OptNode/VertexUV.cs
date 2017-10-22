@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-
-namespace SchmooTech.XWOpt.OptNode
+﻿namespace SchmooTech.XWOpt.OptNode
 {
-    public class VertexUV : BaseNode
+    public class VertexUV<Vector3T> : BaseNode
     {
         internal VertexUV(OptReader opt) : base(opt)
         {

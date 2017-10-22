@@ -1,19 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
+﻿using System.IO;
 
 namespace SchmooTech.XWOpt.OptNode
 {
-    public class FaceList : BaseNode
+    public class FaceList<Vector3T> : BaseNode
     {
         public int[,] vertexRef, edgeRef, UVRef, vertexNormalRef;
 
-        public object[] faceNormals;
-        public object[] accrossTop;
-        public object[] downSide;
+        public Vector3T[] faceNormals;
+        public Vector3T[] accrossTop;
+        public Vector3T[] downSide;
 
-        public long count, edgeCount;
+        public int count, edgeCount;
+
+        static Vector3Adapter<Vector3T> v3Adapter = new Vector3Adapter<Vector3T>();
 
         internal FaceList(OptReader reader) : base(reader)
         {
@@ -21,9 +20,9 @@ namespace SchmooTech.XWOpt.OptNode
             reader.ReadUnknownUseValue(0);
             reader.ReadUnknownUseValue(0);
 
-            count = reader.ReadUInt32();
+            count = reader.ReadInt32();
             reader.FollowPointerToNextByte();
-            edgeCount = reader.ReadUInt32();
+            edgeCount = reader.ReadInt32();
 
             vertexRef = new int[count, 4];
             edgeRef = new int[count, 4];
@@ -53,20 +52,24 @@ namespace SchmooTech.XWOpt.OptNode
                 }
             }
 
-            faceNormals = new object[count];
-            for (int i = 0; i < count; i++)
-            {
-                faceNormals[i] = reader.opt.vector3Cotr.Invoke(new object[] { reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle() });
-            }
+            faceNormals = v3Adapter.ReadArray(reader, count);
+
 
             // Not sure these are actually useful in unity.
-            accrossTop = new object[count];
-            downSide = new object[count];
+            accrossTop = new Vector3T[count];
+            downSide = new Vector3T[count];
             for (int i = 0; i < count; i++)
             {
-                accrossTop[i] = reader.opt.vector3Cotr.Invoke(new object[] { reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle() });
-
-                downSide[i] = reader.opt.vector3Cotr.Invoke(new object[] { reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle() });
+                v3Adapter.Read(reader, ref accrossTop[i]);
+                try
+                {
+                    v3Adapter.Read(reader, ref downSide[i]);
+                }
+                catch (EndOfStreamException e)
+                {
+                    // Edge case: TIE98 CORVTA.OPT is missing a float at EOF.
+                    reader.logger(e.Message);
+                }
             }
         }
     }

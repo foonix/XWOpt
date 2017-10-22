@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
-
-namespace SchmooTech.XWOpt.OptNode
+﻿namespace SchmooTech.XWOpt.OptNode
 {
     public enum PartType
     {
@@ -41,7 +36,7 @@ namespace SchmooTech.XWOpt.OptNode
         Custom6,
     }
 
-    public class PartDescriptor : BaseNode
+    public class PartDescriptor<Vector3T> : BaseNode
     {
         internal PartDescriptor(OptReader opt) : base(opt)
         {

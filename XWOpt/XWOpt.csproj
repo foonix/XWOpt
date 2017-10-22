@@ -58,6 +58,7 @@
     <Compile Include="OptNode\VertexUV.cs" />
     <Compile Include="OptReader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Vector3Adapter.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

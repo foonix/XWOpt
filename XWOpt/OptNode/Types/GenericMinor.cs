@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace SchmooTech.XWOpt.OptNode.Types
+﻿namespace SchmooTech.XWOpt.OptNode.Types
 {
     public enum GenericMinor
     {

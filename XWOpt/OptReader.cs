@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using SchmooTech.XWOpt.OptNode;
 using SchmooTech.XWOpt.OptNode.Types;
+using System.Reflection;
 
 namespace SchmooTech.XWOpt
 {
@@ -11,7 +12,16 @@ namespace SchmooTech.XWOpt
     /// </summary>
     internal class OptReader : BinaryReader
     {
-        internal OptFile opt;
+        public int globalOffset = 0;
+        public int version = 0;
+
+        // Making this a generic type parameter results in a generic parameter explosion where every node type 
+        // needs Vector3T and Vector2T type parameters to use the reader wether they use those types or not.
+        private Type vector3T;
+        private Type vector2T;
+        public Type Vector3T { get => vector3T; set => vector3T = value; }
+        public Type Vector2T { get => vector2T; set => vector2T = value; }
+
         internal Action<string> logger;
 
         /// <summary>
@@ -19,10 +29,9 @@ namespace SchmooTech.XWOpt
         /// </summary>
         /// <param name="stream"></param>
         /// <param name="logger"></param>
-        internal OptReader(Stream stream, OptFile opt, Action<string> logger) : base(stream)
+        internal OptReader(Stream stream, Action<string> logger) : base(stream)
         {
             this.logger = logger;
-            this.opt = opt;
         }
 
         internal List<BaseNode> ReadChildren()
@@ -61,7 +70,7 @@ namespace SchmooTech.XWOpt
             // This may not work if globalOffset is 0.
             // Should be a pointer to an offset containing string "Tex00000" or similar.
             int peek = ReadInt32();
-            if (majorId > opt.globalOffset && minorId == (long)Major.textrue)
+            if (majorId > globalOffset && minorId == (long)Major.textrue)
             {
                 preHeaderOffset = majorId;
                 majorId = minorId;
@@ -81,25 +90,25 @@ namespace SchmooTech.XWOpt
                         case (int)GenericMinor.branch:
                             return new BranchNode(this) as BaseNode;
                         case (int)GenericMinor.meshVertex:
-                            return new MeshVerticies(this) as BaseNode;
+                            return MakeGenericNode(typeof(MeshVerticies<>), new Type[] { Vector3T });
                         case (int)GenericMinor.textureVertex:
-                            return new VertexUV(this) as BaseNode;
+                            return MakeGenericNode(typeof(VertexUV<>), new Type[] { Vector2T });
                         case (int)GenericMinor.textureReferenceByName:
                             return new TextureReferenceByName(this) as BaseNode;
                         case (int)GenericMinor.vertexNormal:
-                            return new VertexNormals(this) as BaseNode;
+                            return MakeGenericNode(typeof(VertexNormals<>), new Type[] { Vector3T });
                         case (int)GenericMinor.hardpoint:
-                            return new Hardpoint(this) as BaseNode;
+                            return MakeGenericNode(typeof(Hardpoint<>), new Type[] { Vector3T });
                         case (int)GenericMinor.transform:
-                            return new Transform(this) as BaseNode;
+                            return MakeGenericNode(typeof(Transform<>), new Type[] { Vector3T });
                         case (int)GenericMinor.meshLOD:
                             return new MeshLOD(this) as BaseNode;
                         case (int)GenericMinor.faceList:
-                            return new FaceList(this) as BaseNode;
+                            return MakeGenericNode(typeof(FaceList<>), new Type[] { Vector3T });
                         case (int)GenericMinor.skinSelector:
                             return new SkinSelector(this) as BaseNode;
                         case (int)GenericMinor.meshDescriptor:
-                            return new PartDescriptor(this) as BaseNode;
+                            return MakeGenericNode(typeof(PartDescriptor<>), new Type[] { Vector3T });
                         default:
                             logger("Found unknown node type " + majorId + " " + minorId + " at " + BaseStream.Position);
                             return new BaseNode(this);
@@ -111,10 +120,10 @@ namespace SchmooTech.XWOpt
                         case (int)TextureMinor.texture:
                             return new Texture(this, preHeaderOffset);
                         case (int)TextureMinor.textureWithAlpha:
-                            return new BaseNode(this);
+                            return new Texture(this, preHeaderOffset);
                         default:
                             logger("Found unknown node type " + majorId + " " + minorId + " at " + BaseStream.Position);
-                            return new Texture(this, preHeaderOffset) as BaseNode;
+                            return new Texture(this, preHeaderOffset);
                     }
                 default:
                     return new BaseNode(this);
@@ -128,7 +137,7 @@ namespace SchmooTech.XWOpt
         /// <returns>Physical file address</returns>
         internal long RealOffset(int offset)
         {
-            return offset - opt.globalOffset;
+            return offset - globalOffset;
         }
 
         /// <summary>
@@ -138,7 +147,7 @@ namespace SchmooTech.XWOpt
         /// <returns>Position to be stored.</returns>
         internal long FakeOffset(int offset)
         {
-            return offset + opt.globalOffset;
+            return offset + globalOffset;
         }
 
         /// <summary>Follow a pointer read from the file.</summary>
@@ -167,7 +176,7 @@ namespace SchmooTech.XWOpt
 
         internal void SeekShouldPointHere(int offset)
         {
-            if(RealOffset(offset) != BaseStream.Position)
+            if (RealOffset(offset) != BaseStream.Position)
             {
                 logger(String.Format("Warning: Skipping unkown data near {0:X}", BaseStream.Position));
                 Seek(offset);
@@ -185,6 +194,23 @@ namespace SchmooTech.XWOpt
             if (found != expected)
             {
                 logger(String.Format("Unknown use field normally containing {0:X} contains {1:X} at {2:X}", found, expected, BaseStream.Position));
+            }
+        }
+
+        // Create OptNodes with reflection avoids generic parameter explosion.
+        BaseNode MakeGenericNode(Type nodeType, Type[] GenericParams, object constructorArgs = null)
+        {
+            var closedGeneric = nodeType.MakeGenericType(GenericParams);
+
+            if (null != constructorArgs)
+            {
+                return closedGeneric.GetConstructor(new Type[] { this.GetType(), constructorArgs.GetType() }).Invoke(new object[] { this, constructorArgs }) as BaseNode;
+            }
+            else
+            {
+                var cotrs = closedGeneric.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic);
+                var cotr = closedGeneric.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[] { this.GetType() }, null);
+                return cotr.Invoke(new object[] { this }) as BaseNode;
             }
         }
     }

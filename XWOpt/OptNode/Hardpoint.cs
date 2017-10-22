@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
-
-namespace SchmooTech.XWOpt.OptNode
+﻿namespace SchmooTech.XWOpt.OptNode
 {
     public enum HardpointType
     {
@@ -41,10 +36,12 @@ namespace SchmooTech.XWOpt.OptNode
         Cockpit,
     }
 
-    public class Hardpoint : BaseNode
+    public class Hardpoint<Vector3T> : BaseNode
     {
         public HardpointType type;
-        public Object coords;
+        public Vector3T coords;
+
+        static Vector3Adapter<Vector3T> v3Adapter = new Vector3Adapter<Vector3T>();
 
         internal Hardpoint(OptReader reader) : base(reader)
         {
@@ -56,7 +53,7 @@ namespace SchmooTech.XWOpt.OptNode
 
             type = (HardpointType)reader.ReadUInt32();
 
-            coords = reader.opt.vector3Cotr.Invoke(new object[] { reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle() });
+            v3Adapter.Read(reader, ref coords);
         }
     }
 }
