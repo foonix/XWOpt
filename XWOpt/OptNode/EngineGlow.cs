@@ -21,20 +21,39 @@
 
 namespace SchmooTech.XWOpt.OptNode
 {
-    public class TextureReferenceByName : BaseNode
+    class EngineGlow<TVector3> : BaseNode
     {
-        public string name;
+        // RGBA colors
+        private long innerColor, outerColor;
+        private TVector3 center, x, y, z;
 
-        public int id;
+        public long InnerColor { get => innerColor; set => innerColor = value; }
+        public long OuterColor { get => outerColor; set => outerColor = value; }
+        public TVector3 Center { get => Center; set => Center = value; }
 
-        internal TextureReferenceByName(OptReader reader) : base(reader)
+        // Unknown use vectors.
+        public TVector3 X { get => x; set => x = value; }
+        public TVector3 Y { get => y; set => y = value; }
+        public TVector3 Z { get => z; set => z = value; }
+
+        static Vector3Adapter<TVector3> v3Adapter = new Vector3Adapter<TVector3>();
+
+        internal EngineGlow(OptReader reader) : base(reader)
         {
             reader.ReadUnknownUseValue(0, this);
             reader.ReadUnknownUseValue(0, this);
-            id = reader.ReadInt32();
-
+            reader.ReadUnknownUseValue(1, this);
             reader.FollowPointerToNextByte(this);
-            name = reader.ReadString(9);
+            reader.ReadUnknownUseValue(0, this);
+
+            innerColor = reader.ReadInt32();
+            outerColor = reader.ReadInt32();
+            v3Adapter.Read(reader, ref center);
+
+            // Cargo culting the order.
+            v3Adapter.Read(reader, ref y);
+            v3Adapter.Read(reader, ref z);
+            v3Adapter.Read(reader, ref x);
         }
     }
 }

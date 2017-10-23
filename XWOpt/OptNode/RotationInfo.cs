@@ -21,20 +21,31 @@
 
 namespace SchmooTech.XWOpt.OptNode
 {
-    public class TextureReferenceByName : BaseNode
+    /// <summary>
+    /// Center of rotation and axises of rotation.
+    /// </summary>
+    /// <typeparam name="TVector3"></typeparam>
+    public class RotationInfo<TVector3> : BaseNode
     {
-        public string name;
+        public TVector3 offset; // Seems the same as MeshDescriptor.centerPoint
+        public TVector3 yawAxis;
+        public TVector3 rollAxis;
+        public TVector3 pitchAxis;
 
-        public int id;
+        static Vector3Adapter<TVector3> v3adapter = new Vector3Adapter<TVector3>();
 
-        internal TextureReferenceByName(OptReader reader) : base(reader)
+        internal RotationInfo(OptReader reader) : base(reader)
         {
             reader.ReadUnknownUseValue(0, this);
             reader.ReadUnknownUseValue(0, this);
-            id = reader.ReadInt32();
+            reader.ReadUnknownUseValue(1, this);
 
             reader.FollowPointerToNextByte(this);
-            name = reader.ReadString(9);
+
+            v3adapter.Read(reader, ref offset);
+            v3adapter.Read(reader, ref yawAxis);
+            v3adapter.Read(reader, ref rollAxis);
+            v3adapter.Read(reader, ref pitchAxis);
         }
     }
 }

@@ -1,21 +1,43 @@
-﻿namespace SchmooTech.XWOpt.OptNode.Types
+﻿/*
+ * Copyright 2017 Jason McNew
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this
+ * software and associated documentation files (the "Software"), to deal in the Software
+ * without restriction, including without limitation the rights to use, copy, modify,
+ * merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies
+ * or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+ * PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+namespace SchmooTech.XWOpt.OptNode.Types
 {
     public enum GenericMinor
     {
-        branch = 0,
-        faceList = 1,
-        mainJump = 2,
-        meshVertex = 3,
-        info = 4,
-        textureReferenceByName = 7,
-        vertexNormal = 11,
-        textureVertex = 13,
-        textureHeader = 20,
-        meshLOD = 21,
-        hardpoint = 22,
-        transform = 23,
-        skinSelector = 24,
-        meshDescriptor = 25,
-        unknown = 0xff,
+        Branch = 0,
+        FaceList = 1,
+        MainJump = 2,
+        MeshVertex = 3,
+        Info = 4,
+        TextureReferenceByName = 7,
+        VertexNormal = 11,
+        TextureVertex = 13,
+        TextureHeader = 20,
+        MeshLod = 21,
+        Hardpoint = 22,
+        Transform = 23,
+        SkinSelector = 24,
+        MeshDescriptor = 25,
+        EngineGlow = 28,
+        Unknown = 0xff,
     }
 }

@@ -24,37 +24,36 @@ using System.Reflection;
 
 namespace SchmooTech.XWOpt
 {
-    internal class Vector3Adapter<TVector3>
+    class Vector2Adapter<TVector2>
     {
+        // TODO: Call constructor if ref type.
         ConstructorInfo vector3Cotr;
-        FieldInfo X, Y, Z;
+        FieldInfo X, Y;
 
-        public Vector3Adapter()
+        public Vector2Adapter()
         {
-            vector3Cotr = typeof(TVector3).GetConstructor(new Type[] { typeof(float), typeof(float), typeof(float) });
+            vector3Cotr = typeof(TVector2).GetConstructor(new Type[] { typeof(float), typeof(float), typeof(float) });
 
-            X = typeof(TVector3).GetField("X", BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.Public);
-            Y = typeof(TVector3).GetField("Y", BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.Public);
-            Z = typeof(TVector3).GetField("Z", BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.Public);
+            X = typeof(TVector2).GetField("X", BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.Public);
+            Y = typeof(TVector2).GetField("Y", BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.Public);
 
-            if (null == X || null == Y || null == Z)
+            if (null == X || null == Y)
             {
-                throw new ArgumentException("Vector3 type must have x, y, and z fields (case insensitive).");
+                throw new ArgumentException("Vector2 type must have x, y, and z fields (case insensitive).");
             }
         }
 
         // Using ref because Vector3T can't be initialized here.
-        internal void Read(OptReader reader, ref TVector3 v)
+        internal void Read(OptReader reader, ref TVector2 v)
         {
             TypedReference typedRef = __makeref(v);
             X.SetValueDirect(typedRef, reader.ReadSingle());
             Y.SetValueDirect(typedRef, reader.ReadSingle());
-            Z.SetValueDirect(typedRef, reader.ReadSingle());
         }
 
-        internal TVector3[] ReadArray(OptReader reader, int count)
+        internal TVector2[] ReadArray(OptReader reader, int count)
         {
-            var v3Array = new TVector3[count];
+            var v3Array = new TVector2[count];
 
             for (int i = 0; i < count; i++)
             {

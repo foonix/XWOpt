@@ -1,11 +1,32 @@
-﻿using System;
+﻿/*
+ * Copyright 2017 Jason McNew
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this
+ * software and associated documentation files (the "Software"), to deal in the Software
+ * without restriction, including without limitation the rights to use, copy, modify,
+ * merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies
+ * or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+ * PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+using System;
 using System.IO;
 using System.Collections.Generic;
 using SchmooTech.XWOpt.OptNode;
 
 namespace SchmooTech.XWOpt
 {
-    public class OptFile<Vector2T, Vector3T> : List<BaseNode>
+    public class OptFile<TVector2, TVector3> : List<BaseNode>
     {
         // The number that is subtracted from the file's internal pointers to get the actual file position.
         public int globalOffset = 0xFF;
@@ -20,10 +41,11 @@ namespace SchmooTech.XWOpt
 
         public void Read(string fileName)
         {
-            using (var reader = new OptReader(File.OpenRead(fileName), logger))
+            using (var stream = File.OpenRead(fileName))
             {
-                reader.Vector2T = typeof(Vector2T);
-                reader.Vector3T = typeof(Vector3T);
+                var reader = new OptReader(stream, logger);
+                reader.Vector2T = typeof(TVector2);
+                reader.Vector3T = typeof(TVector3);
 
                 // Version is stored as negative int.
                 reader.version = version = -reader.ReadInt32();
@@ -42,7 +64,9 @@ namespace SchmooTech.XWOpt
                 // Usually 2 in TIE98
                 unknownWord = reader.ReadInt16();
 
-                AddRange(reader.ReadChildren());
+                var partCount = reader.ReadInt32();
+                var partListOffset = reader.ReadInt32();
+                AddRange(reader.ReadChildren(partCount, partListOffset, this));
             }
         }
 
