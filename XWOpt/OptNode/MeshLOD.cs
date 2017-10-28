@@ -20,14 +20,17 @@
  */
 
 using System;
+using System.Collections.ObjectModel;
+using System.Globalization;
 
 namespace SchmooTech.XWOpt.OptNode
 {
-    public class MeshLOD : BaseNode
+    public class MeshLod : BranchNode
     {
-        public float[] LODThresholds;
+        private Collection<float> maxRenderDistance = new Collection<float>();
+        public Collection<float> MaxRenderDistance { get => maxRenderDistance; }
 
-        internal MeshLOD(OptReader reader) : base(reader)
+        internal MeshLod(OptReader reader) : base()
         {
             int lodChildCount = reader.ReadInt32();
             int lodChildOffset = reader.ReadInt32();
@@ -37,17 +40,17 @@ namespace SchmooTech.XWOpt.OptNode
             // No idea why this would happen, but my understanding of this block is wrong if it does.
             if (lodChildCount != lodThresholdCount)
             {
-                reader.logger(String.Format("Not the same number of LOD meshes ({0}) as LOD offsets ({1}) at {2:X}", lodChildCount, lodThresholdCount, reader.BaseStream.Position));
+                reader.logger(String.Format(CultureInfo.CurrentCulture, "Not the same number of LOD meshes ({0}) as LOD offsets ({1}) at {2:X}", lodChildCount, lodThresholdCount, reader.BaseStream.Position));
             }
 
-            LODThresholds = new float[lodChildCount];
             reader.Seek(lodThresholdOffset);
+            maxRenderDistance.Clear();
             for (int i = 0; i < lodChildCount; i++)
             {
-                LODThresholds[i] = reader.ReadSingle();
+                maxRenderDistance.Add(reader.ReadSingle());
             }
 
-            AddRange(reader.ReadChildren(lodChildCount, lodChildOffset, this));
+            ReadChildren(reader, lodChildCount, lodChildOffset);
         }
     }
 }

@@ -20,6 +20,7 @@
  */
 
 using System;
+using System.Collections.ObjectModel;
 using System.Reflection;
 
 namespace SchmooTech.XWOpt
@@ -32,7 +33,7 @@ namespace SchmooTech.XWOpt
 
         public Vector2Adapter()
         {
-            vector3Cotr = typeof(TVector2).GetConstructor(new Type[] { typeof(float), typeof(float), typeof(float) });
+            vector3Cotr = typeof(TVector2).GetConstructor(new Type[] { typeof(float), typeof(float) });
 
             X = typeof(TVector2).GetField("X", BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.Public);
             Y = typeof(TVector2).GetField("Y", BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.Public);
@@ -51,6 +52,11 @@ namespace SchmooTech.XWOpt
             Y.SetValueDirect(typedRef, reader.ReadSingle());
         }
 
+        internal TVector2 Read(OptReader reader)
+        {
+            return (TVector2)vector3Cotr.Invoke(new object[] { reader.ReadSingle(), reader.ReadSingle() });
+        }
+
         internal TVector2[] ReadArray(OptReader reader, int count)
         {
             var v3Array = new TVector2[count];
@@ -63,6 +69,17 @@ namespace SchmooTech.XWOpt
             return v3Array;
         }
 
+        internal Collection<TVector2> ReadCollection(OptReader reader, int count)
+        {
+            var collection = new Collection<TVector2>();
+
+            for (int i = 0; i < count; i++)
+            {
+                collection.Add(Read(reader));
+            }
+
+            return collection;
+        }
 
         internal void Write()
         {

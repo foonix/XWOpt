@@ -21,7 +21,7 @@
 
 namespace SchmooTech.XWOpt.OptNode
 {
-    public enum HardpointType
+    public enum WeaponType
     {
         None,
         RebelLaser,
@@ -59,10 +59,13 @@ namespace SchmooTech.XWOpt.OptNode
 
     public class Hardpoint<TVector3> : BaseNode
     {
-        public HardpointType type;
-        public TVector3 location;
+        private WeaponType weaponType;
+        private TVector3 location;
 
         static Vector3Adapter<TVector3> v3Adapter = new Vector3Adapter<TVector3>();
+
+        public WeaponType WeaponType { get => weaponType; set => weaponType = value; }
+        public TVector3 Location { get => location; set => location = value; }
 
         internal Hardpoint(OptReader reader) : base(reader)
         {
@@ -72,7 +75,7 @@ namespace SchmooTech.XWOpt.OptNode
 
             reader.FollowPointerToNextByte(this);
 
-            type = (HardpointType)reader.ReadUInt32();
+            weaponType = (WeaponType)reader.ReadUInt32();
 
             v3Adapter.Read(reader, ref location);
         }

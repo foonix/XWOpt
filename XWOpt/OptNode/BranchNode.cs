@@ -19,13 +19,57 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
- namespace SchmooTech.XWOpt.OptNode
+using System.Collections.ObjectModel;
+
+namespace SchmooTech.XWOpt.OptNode
 {
     public class BranchNode : BaseNode
     {
+        Collection<BaseNode> children = new Collection<BaseNode>();
+
+        internal BranchNode() : base() { }
         internal BranchNode(OptReader reader) : base(reader)
         {
-            AddRange(reader.ReadChildren(this));
+            ReadChildren(reader);
+        }
+
+        internal void ReadChildren(OptReader reader)
+        {
+            foreach (var child in reader.ReadChildren(this))
+            {
+                children.Add(child);
+            }
+        }
+
+        internal void ReadChildren(OptReader reader, int count, int jumpListOffset)
+        {
+            foreach (var child in reader.ReadChildren(count, jumpListOffset, this))
+            {
+                children.Add(child);
+            }
+        }
+
+        public Collection<T> FindAll<T>()
+            where T : BaseNode
+        {
+            var found = new Collection<T>();
+            foreach (BaseNode child in children)
+            {
+                if (child is T)
+                {
+                    found.Add((T)child);
+                }
+
+                var branch = child as BranchNode;
+                if (null != branch)
+                {
+                    foreach (var node in branch.FindAll<T>())
+                    {
+                        found.Add(node);
+                    }
+                }
+            }
+            return found;
         }
     }
 }

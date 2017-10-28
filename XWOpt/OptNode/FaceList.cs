@@ -19,22 +19,44 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using SchmooTech.XWOpt;
 
 namespace SchmooTech.XWOpt.OptNode
 {
     public class FaceList<TVector3> : BaseNode
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
-        public int[,] vertexRef, edgeRef, UVRef, vertexNormalRef;
+        private Collection<CoordinateReferenceTuple> vertexNormalRef;
 
-        public TVector3[] faceNormals;
-        public TVector3[] acrossTop;
-        public TVector3[] downSide;
+        private Collection<TVector3> faceNormals;
+        private Collection<TextureBasisVectors<TVector3>> basisVectors;
 
-        public int count, edgeCount;
+        private int edgeCount;
 
         static Vector3Adapter<TVector3> v3Adapter = new Vector3Adapter<TVector3>();
+
+        [SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
+        private Collection<CoordinateReferenceTuple> vertexRef;
+        [SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
+        private Collection<CoordinateReferenceTuple> edgeRef;
+        [SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
+        private Collection<CoordinateReferenceTuple> uVRef;
+        private int count;
+
+        [SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
+        public Collection<CoordinateReferenceTuple> VertexRef { get => vertexRef; }
+        [SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
+        public Collection<CoordinateReferenceTuple> EdgeRef { get => edgeRef; }
+        [SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
+        public Collection<CoordinateReferenceTuple> UVRef { get => uVRef; }
+        [SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
+        public Collection<CoordinateReferenceTuple> VertexNormalRef { get => vertexNormalRef; }
+        public Collection<TVector3> FaceNormals { get => faceNormals; }
+        public Collection<TextureBasisVectors<TVector3>> BasisVectors { get => basisVectors; }
+        public int Count { get => count; set => count = value; }
+        public int EdgeCount { get => edgeCount; set => edgeCount = value; }
 
         internal FaceList(OptReader reader) : base(reader)
         {
@@ -46,51 +68,36 @@ namespace SchmooTech.XWOpt.OptNode
             reader.FollowPointerToNextByte(this);
             edgeCount = reader.ReadInt32();
 
-            vertexRef = new int[count, 4];
-            edgeRef = new int[count, 4];
-            UVRef = new int[count, 4];
-            vertexNormalRef = new int[count, 4];
+            vertexRef = new Collection<CoordinateReferenceTuple>();
+            edgeRef = new Collection<CoordinateReferenceTuple>();
+            uVRef = new Collection<CoordinateReferenceTuple>();
+            vertexNormalRef = new Collection<CoordinateReferenceTuple>();
 
             for (int i = 0; i < count; i++)
             {
-                for (int j = 0; j < 4; j++)
-                {
-                    vertexRef[i, j] = reader.ReadInt32();
-                }
-
-                for (int j = 0; j < 4; j++)
-                {
-                    edgeRef[i, j] = reader.ReadInt32();
-                }
-
-                for (int j = 0; j < 4; j++)
-                {
-                    UVRef[i, j] = reader.ReadInt32();
-                }
-
-                for (int j = 0; j < 4; j++)
-                {
-                    vertexNormalRef[i, j] = reader.ReadInt32();
-                }
+                vertexRef.Add(new CoordinateReferenceTuple(reader));
+                edgeRef.Add(new CoordinateReferenceTuple(reader));
+                UVRef.Add(new CoordinateReferenceTuple(reader));
+                vertexNormalRef.Add(new CoordinateReferenceTuple(reader));
             }
 
-            faceNormals = v3Adapter.ReadArray(reader, count);
+            faceNormals = v3Adapter.ReadCollection(reader, count);
 
-
-            // Not sure these are actually useful in unity.
-            acrossTop = new TVector3[count];
-            downSide = new TVector3[count];
+            basisVectors = new Collection<TextureBasisVectors<TVector3>>();
             for (int i = 0; i < count; i++)
             {
-                v3Adapter.Read(reader, ref acrossTop[i]);
+                // Edge case: TIE98 CORVTA.OPT is missing a float at EOF.
                 try
                 {
-                    v3Adapter.Read(reader, ref downSide[i]);
+                    BasisVectors.Add(new TextureBasisVectors<TVector3>(reader));
                 }
                 catch (EndOfStreamException e)
                 {
-                    // Edge case: TIE98 CORVTA.OPT is missing a float at EOF.
                     reader.logger(e.Message);
+                    var bv = new TextureBasisVectors<TVector3>();
+                    bv.AcrossTop = v3Adapter.Zero();
+                    bv.AcrossTop = v3Adapter.Zero();
+                    BasisVectors.Add(bv);
                 }
             }
         }

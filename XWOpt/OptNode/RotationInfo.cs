@@ -27,12 +27,17 @@ namespace SchmooTech.XWOpt.OptNode
     /// <typeparam name="TVector3"></typeparam>
     public class RotationInfo<TVector3> : BaseNode
     {
-        public TVector3 offset; // Seems the same as MeshDescriptor.centerPoint
-        public TVector3 yawAxis;
-        public TVector3 rollAxis;
-        public TVector3 pitchAxis;
+        private TVector3 offset; // Seems the same as MeshDescriptor.centerPoint
+        private TVector3 yawAxis;
+        private TVector3 rollAxis;
+        private TVector3 pitchAxis;
 
         static Vector3Adapter<TVector3> v3adapter = new Vector3Adapter<TVector3>();
+
+        public TVector3 Offset { get => offset; set => offset = value; }
+        public TVector3 YawAxis { get => yawAxis; set => yawAxis = value; }
+        public TVector3 RollAxis { get => rollAxis; set => rollAxis = value; }
+        public TVector3 PitchAxis { get => pitchAxis; set => pitchAxis = value; }
 
         internal RotationInfo(OptReader reader) : base(reader)
         {

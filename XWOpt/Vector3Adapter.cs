@@ -20,6 +20,7 @@
  */
 
 using System;
+using System.Collections.ObjectModel;
 using System.Reflection;
 
 namespace SchmooTech.XWOpt
@@ -52,6 +53,11 @@ namespace SchmooTech.XWOpt
             Z.SetValueDirect(typedRef, reader.ReadSingle());
         }
 
+        internal TVector3 Read(OptReader reader)
+        {
+            return (TVector3)vector3Cotr.Invoke(new object[] { reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle() });
+        }
+
         internal TVector3[] ReadArray(OptReader reader, int count)
         {
             var v3Array = new TVector3[count];
@@ -64,10 +70,26 @@ namespace SchmooTech.XWOpt
             return v3Array;
         }
 
+        internal Collection<TVector3> ReadCollection(OptReader reader, int count)
+        {
+            var collection = new Collection<TVector3>();
+
+            for (int i = 0; i < count; i++)
+            {
+                collection.Add(Read(reader));
+            }
+
+            return collection;
+        }
 
         internal void Write()
         {
             throw new NotImplementedException();
+        }
+
+        internal TVector3 Zero()
+        {
+            return (TVector3)vector3Cotr.Invoke(new object[] { 0, 0, 0 });
         }
     }
 }

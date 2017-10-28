@@ -19,13 +19,17 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+using System.Collections.ObjectModel;
+
 namespace SchmooTech.XWOpt.OptNode
 {
     public class VertexNormals<TVector3> : BaseNode
     {
-        public TVector3[] normals;
+        private Collection<TVector3> normals;
 
         static Vector3Adapter<TVector3> v3adapter = new Vector3Adapter<TVector3>();
+
+        public Collection<TVector3> Normals { get => normals; }
 
         internal VertexNormals(OptReader reader) : base(reader)
         {
@@ -37,7 +41,7 @@ namespace SchmooTech.XWOpt.OptNode
 
             reader.FollowPointerToNextByte(this);
 
-            normals = v3adapter.ReadArray(reader, count);
+            normals = v3adapter.ReadCollection(reader, count);
         }
     }
 }

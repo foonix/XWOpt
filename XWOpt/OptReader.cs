@@ -26,6 +26,7 @@ using SchmooTech.XWOpt.OptNode;
 using SchmooTech.XWOpt.OptNode.Types;
 using System.Reflection;
 using System.Text;
+using System.Globalization;
 
 namespace SchmooTech.XWOpt
 {
@@ -39,10 +40,8 @@ namespace SchmooTech.XWOpt
 
         // Making this a generic type parameter results in a generic parameter explosion where every node type 
         // needs TVector3 and TVector2 type parameters to use the reader wether they use those types or not.
-        private Type tVector3;
-        private Type tVector2;
-        public Type Vector3T { get => tVector3; set => tVector3 = value; }
-        public Type Vector2T { get => tVector2; set => tVector2 = value; }
+        public Type Vector3T { get; set; }
+        public Type Vector2T { get; set; }
 
         internal Action<string> logger;
 
@@ -56,7 +55,7 @@ namespace SchmooTech.XWOpt
             this.logger = logger;
         }
 
-        internal List<BaseNode> ReadChildren(object parent)
+        internal List<BaseNode> ReadChildren(object context)
         {
             var count = ReadInt32();
             if (0 == count)
@@ -69,20 +68,20 @@ namespace SchmooTech.XWOpt
             // Reverse jump count and offset?
             if (version <= 2)
             {
-                ReadUnknownUseValue(1, parent);
+                ReadUnknownUseValue(1, context);
             }
             else
             {
-                ReadUnknownUseValue(0, parent);
+                ReadUnknownUseValue(0, context);
             }
             ReadInt32();  // skip reverse jump pointer
 
             // warn if caller is skipping anything else
-            SeekShouldPointHere(offset, parent);
-            return ReadChildren(count, offset, parent);
+            SeekShouldPointHere(offset, context);
+            return ReadChildren(count, offset, context);
         }
 
-        internal List<BaseNode> ReadChildren(int count, int jumpListOffset, object parent)
+        internal List<BaseNode> ReadChildren(int count, int jumpListOffset, object context)
         {
             var nodes = new List<BaseNode>();
 
@@ -92,7 +91,7 @@ namespace SchmooTech.XWOpt
                 int nextNode = ReadInt32();
                 if (nextNode != 0)
                 {
-                    nodes.Add(ReadNodeAt(nextNode, parent));
+                    nodes.Add(ReadNodeAt(nextNode));
                 }
             }
 
@@ -100,7 +99,7 @@ namespace SchmooTech.XWOpt
         }
 
         // Instantiates the correct node type based on IDs found.
-        public BaseNode ReadNodeAt(int offset, object parent)
+        public BaseNode ReadNodeAt(int offset)
         {
             int preHeaderOffset = 0;
 
@@ -130,9 +129,8 @@ namespace SchmooTech.XWOpt
                 case (int)Major.Generic:
                     switch (minorId)
                     {
-                        // TODO: set parents.
                         case (int)GenericMinor.Branch:
-                            return new BranchNode(this) { parent = parent } as BaseNode;
+                            return new BranchNode(this) as BaseNode;
                         case (int)GenericMinor.MeshVertex:
                             return MakeGenericNode(typeof(MeshVertices<>), new Type[] { Vector3T });
                         case (int)GenericMinor.TextureVertex:
@@ -146,7 +144,7 @@ namespace SchmooTech.XWOpt
                         case (int)GenericMinor.Transform:
                             return MakeGenericNode(typeof(RotationInfo<>), new Type[] { Vector3T });
                         case (int)GenericMinor.MeshLod:
-                            return new MeshLOD(this) as BaseNode;
+                            return new MeshLod(this) as BaseNode;
                         case (int)GenericMinor.FaceList:
                             return MakeGenericNode(typeof(FaceList<>), new Type[] { Vector3T });
                         case (int)GenericMinor.SkinSelector:
@@ -224,7 +222,7 @@ namespace SchmooTech.XWOpt
         {
             if (RealOffset(offset) != BaseStream.Position)
             {
-                logger(String.Format("Warning: Skipping unkown data near {0:X} ({1} bytes) in a {2}", BaseStream.Position, RealOffset(offset) - BaseStream.Position, caller.ToString()));
+                logger(String.Format(CultureInfo.CurrentCulture, "Warning: Skipping unkown data near {0:X} ({1} bytes) in a {2}", BaseStream.Position, RealOffset(offset) - BaseStream.Position, caller.ToString()));
                 Seek(offset);
             }
         }
@@ -234,12 +232,12 @@ namespace SchmooTech.XWOpt
         /// Logs a warning if it does not contain the value we normally see.
         /// </summary>
         /// <param name="expected">The expected value</param>
-        internal void ReadUnknownUseValue(int expected, object parent)
+        internal void ReadUnknownUseValue(int expected, object context)
         {
             int found = ReadInt32();
             if (found != expected)
             {
-                logger(String.Format("Unknown use field normally containing {0:X} contains {1:X} at {2:X} in a {3}", expected, found, BaseStream.Position, parent.ToString()));
+                logger(String.Format(CultureInfo.CurrentCulture, "Unknown use field normally containing {0:X} contains {1:X} at {2:X} in a {3}", expected, found, BaseStream.Position, context.ToString()));
             }
         }
 

@@ -19,30 +19,44 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace SchmooTech.XWOpt.OptNode
 {
     public class Texture : BaseNode
     {
-        public int uid;
-        public string name;
-        public int width, height, mipLevels = 0;
+        // Not sure what this number means.  Seems to be the same on most textures inside of the same OPT.
+        private int group;
+        private string name;
+        private int mipLevels = 0;
 
-        public byte[] texturePalletRefs;
-        public List<byte[]> mipPalletRefs = new List<byte[]>();
+        private byte[] texturePalletRefs;
+        private Collection<byte[]> mipPalletRefs = new Collection<byte[]>();
 
         // 16 pallets at decreasing light levels.
         // colors packed 5-6-5 blue, green, red.
+        private TexturePallet pallet = new TexturePallet();
+        private int width;
+        private int height;
+
+        public int Group { get => group; set => group = value; }
+        public string Name { get => name; set => name = value; }
+        public int Width { get => width; set => width = value; }
+        public int Height { get => height; set => height = value; }
+        public int MipLevels { get => mipLevels; set => mipLevels = value; }
+        public Collection<byte[]> MipPalletRefs { get => mipPalletRefs; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
-        public ushort[,] pallet;
+        [CLSCompliant(false)]
+        public TexturePallet Pallet { get => pallet; }
 
         internal Texture(OptReader reader, int textureNameOffset) : base(reader)
         {
             // TODO: Check for alpha channel 0 26 node.
             reader.ReadUnknownUseValue(0, this);
 
-            uid = reader.ReadInt32();
+            group = reader.ReadInt32();
 
             // TODO: Detect pallet reuse.
             var palletAddressOffset = reader.ReadInt32();
@@ -86,16 +100,7 @@ namespace SchmooTech.XWOpt.OptNode
 
             // Now go back and find the texture pallet.
             reader.Seek(palletOffset);
-            // Always 16 pallets, 256 colors each
-            // For some reason pallets 0-7 seem to be padding, 8-15 appear to be increasing brightness
-            pallet = new ushort[16, 256];
-            for (int i = 0; i < 16; i++)
-            {
-                for (int j = 0; j < 256; j++)
-                {
-                    pallet[i, j] = reader.ReadUInt16();
-                }
-            }
+            pallet = new TexturePallet(reader);
         }
     }
 }

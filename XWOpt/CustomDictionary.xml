@@ -5,7 +5,10 @@
     <Recognized>
       <Word>comm</Word>
       <Word>hardpoint</Word>
+      <Word>hitbox</Word>
+      <Word>lod</Word>
       <Word>magpulse</Word>
+      <Word>mip</Word>
       <Word>normals</Word>
       <Word>schmoo</Word>
     </Recognized>

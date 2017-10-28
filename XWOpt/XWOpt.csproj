@@ -41,17 +41,20 @@
     <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CoordinateReferenceTouple.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="OptFile.cs" />
     <Compile Include="OptNode\BaseNode.cs" />
     <Compile Include="OptNode\BranchNode.cs" />
     <Compile Include="OptNode\EngineGlow.cs" />
     <Compile Include="OptNode\FaceList.cs" />
     <Compile Include="OptNode\Hardpoint.cs" />
-    <Compile Include="OptNode\MeshLOD.cs" />
+    <Compile Include="OptNode\MeshLod.cs" />
     <Compile Include="OptNode\MeshVerticies.cs" />
     <Compile Include="OptNode\PartDescriptor.cs" />
     <Compile Include="OptNode\SkinSelector.cs" />
     <Compile Include="OptNode\Texture.cs" />
+    <Compile Include="TexturePalletCollection.cs" />
     <Compile Include="OptNode\TextureReferenceByName.cs" />
     <Compile Include="OptNode\RotationInfo.cs" />
     <Compile Include="OptNode\Types\GenericMinor.cs" />
@@ -61,6 +64,7 @@
     <Compile Include="OptNode\VertexUV.cs" />
     <Compile Include="OptReader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TextureBasisVectors.cs" />
     <Compile Include="Vector2Adapter.cs" />
     <Compile Include="Vector3Adapter.cs" />
   </ItemGroup>

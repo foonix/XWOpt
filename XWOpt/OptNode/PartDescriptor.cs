@@ -18,7 +18,7 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
+using System;
 namespace SchmooTech.XWOpt.OptNode
 {
     public enum PartType
@@ -59,20 +59,28 @@ namespace SchmooTech.XWOpt.OptNode
 
     public class PartDescriptor<TVector3> : BaseNode
     {
-        public PartType partType;
+        private PartType partType;
 
         // 0,1,4,5,8,9 = Mesh continues in straight line when destroyed 2,3,6,10 = Mesh breaks off and explodes 7 = destructible parts
         // Looks like bitmask but not sure
-        public int ExplosionType;
+        private int explosionType;
 
-        public TVector3 span; // width of the hit box
-        public TVector3 centerPoint; // Center point of hit box. For targeting the specific part of the craft with "," key.
-        public TVector3 minXYZ; // Lower X,Y,Z bound of the hit box
-        public TVector3 maxXYZ; // Upper X,Y,Z bound of the hit box
+        private TVector3 span; // width of the hit box
+        private TVector3 centerPoint; // Center point of hit box. For targeting the specific part of the craft with "," key.
+        private TVector3 hitboxLowerCorner; // Lower X,Y,Z bound of the hit box
+        private TVector3 hitboxUpperCorner; // Upper X,Y,Z bound of the hit box
 
-        public long targetingGroupID;
+        private long targetingGroupId;
 
         static Vector3Adapter<TVector3> v3Adapter = new Vector3Adapter<TVector3>();
+
+        public PartType PartType { get => partType; set => partType = value; }
+        public int ExplosionType { get => explosionType; set => explosionType = value; }
+        public TVector3 Span { get => span; set => span = value; }
+        public TVector3 CenterPoint { get => centerPoint; set => centerPoint = value; }
+        public TVector3 HitboxLowerCorner { get => hitboxLowerCorner; set => hitboxLowerCorner = value; }
+        public TVector3 HitboxUpperCorner { get => hitboxUpperCorner; set => hitboxUpperCorner = value; }
+        public long TargetingGroupId { get => targetingGroupId; set => targetingGroupId = value; }
 
         internal PartDescriptor(OptReader reader) : base(reader)
         {
@@ -87,10 +95,10 @@ namespace SchmooTech.XWOpt.OptNode
 
             v3Adapter.Read(reader, ref span);
             v3Adapter.Read(reader, ref centerPoint);
-            v3Adapter.Read(reader, ref minXYZ);
-            v3Adapter.Read(reader, ref maxXYZ);
+            v3Adapter.Read(reader, ref hitboxLowerCorner);
+            v3Adapter.Read(reader, ref hitboxUpperCorner);
 
-            targetingGroupID = reader.ReadUInt32();
+            targetingGroupId = reader.ReadUInt32();
         }
     }
 }

@@ -47,10 +47,11 @@ namespace XWOpt_test
         {
             opt = new OptFile<Vector2, Vector3>()
             {
-                logger = msg => TestContext.Out.WriteLine(msg),
+                Logger = msg => TestContext.Out.WriteLine(msg),
             };
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         private static List<string> GetTestCases()
         {
             var files = new List<string>();
@@ -69,9 +70,9 @@ namespace XWOpt_test
         {
             opt.Read(TieFighter);
 
-            var hardpoint = (Hardpoint<Vector3>)opt[0][4];
+            var hardpoint = opt.FindAll<Hardpoint<Vector3>>()[0];
             Assert.That(hardpoint, Is.InstanceOf(typeof(Hardpoint<Vector3>)));
-            Assert.That(hardpoint.location, Is.EqualTo(new Vector3(-17f, -70f, -32f)));
+            Assert.That(hardpoint.Location, Is.EqualTo(new Vector3(-17f, -70f, -32f)));
 
             Assert.That(opt.FindAll<Hardpoint<Vector3>>().Count(), Is.EqualTo(2));
         }

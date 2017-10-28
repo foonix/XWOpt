@@ -23,9 +23,11 @@ namespace SchmooTech.XWOpt.OptNode
 {
     public class TextureReferenceByName : BaseNode
     {
-        public string name;
+        private string name;
+        private int id;
 
-        public int id;
+        public string Name { get => name; set => name = value; }
+        public int Id { get => id; set => id = value; }
 
         internal TextureReferenceByName(OptReader reader) : base(reader)
         {

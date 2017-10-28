@@ -23,17 +23,25 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using SchmooTech.XWOpt.OptNode;
+using System.Collections.ObjectModel;
+using System.Globalization;
 
 namespace SchmooTech.XWOpt
 {
-    public class OptFile<TVector2, TVector3> : List<BaseNode>
+    public class OptFile<TVector2, TVector3>
     {
         // The number that is subtracted from the file's internal pointers to get the actual file position.
-        public int globalOffset = 0xFF;
-        public int version = 0;
-        public short unknownWord = 0;
+        private int globalOffset = 0xFF;
+        private int version = 0;
+        private short unknownWord = 0;
 
-        public Action<string> logger;
+        private Action<string> logger;
+
+        public int GlobalOffset { get => globalOffset; set => globalOffset = value; }
+        public int Version { get => version; set => version = value; }
+        public short UnknownWord { get => unknownWord; set => unknownWord = value; }
+        public Action<string> Logger { get => logger; set => logger = value; }
+        public Collection<BaseNode> RootNodes { get; private set; }
 
         public OptFile()
         {
@@ -43,7 +51,7 @@ namespace SchmooTech.XWOpt
         {
             using (var stream = File.OpenRead(fileName))
             {
-                var reader = new OptReader(stream, logger);
+                var reader = new OptReader(stream, Logger);
                 reader.Vector2T = typeof(TVector2);
                 reader.Vector3T = typeof(TVector3);
 
@@ -54,7 +62,7 @@ namespace SchmooTech.XWOpt
                 int size = reader.ReadInt32() + 8;
                 if (size != reader.BaseStream.Length)
                 {
-                    logger(String.Format("File length expected is {0} but actual lenght is {1}.  File may be corrupt.", size, reader.BaseStream.Length));
+                    Logger(String.Format(CultureInfo.CurrentCulture, "File length expected is {0} but actual lenght is {1}.  File may be corrupt.", size, reader.BaseStream.Length));
                     throw new InvalidDataException();
                 }
 
@@ -66,7 +74,11 @@ namespace SchmooTech.XWOpt
 
                 var partCount = reader.ReadInt32();
                 var partListOffset = reader.ReadInt32();
-                AddRange(reader.ReadChildren(partCount, partListOffset, this));
+                RootNodes = new Collection<BaseNode>();
+                foreach (var child in reader.ReadChildren(partCount, partListOffset, this))
+                {
+                    RootNodes.Add(child);
+                }
             }
         }
 
@@ -79,17 +91,25 @@ namespace SchmooTech.XWOpt
             throw new NotImplementedException();
         }
 
-        public List<T> FindAll<T>()
+        public Collection<T> FindAll<T>()
             where T : BaseNode
         {
-            var found = new List<T>();
-            foreach (BaseNode child in this)
+            var found = new Collection<T>();
+            foreach (BaseNode child in RootNodes)
             {
-                if(child.GetType() == typeof(T))
+                if (child is T)
                 {
                     found.Add((T)child);
                 }
-                found.AddRange(child.FindAll<T>());
+
+                var branch = child as BranchNode;
+                if (null != branch)
+                {
+                    foreach (var node in branch.FindAll<T>())
+                    {
+                        found.Add(node);
+                    }
+                }
             }
             return found;
         }
