@@ -5,50 +5,79 @@ using System.Text;
 
 namespace SchmooTech.XWOpt
 {
-    public struct CoordinateReferenceTuple : IEquatable<CoordinateReferenceTuple>
+    public class CoordinateReferenceTuple : IEquatable<CoordinateReferenceTuple>
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "A")]
-        public int A { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "B")]
-        public int B { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "C")]
-        public int C { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "D")]
-        public int D { get; set; }
+        int[] values = new int[4];
+
+        public int this[int which]
+        {
+            get { return GetIndex(which); }
+            set { SetIndex(which, value); }
+        }
 
         internal CoordinateReferenceTuple(OptReader reader)
         {
-            A = reader.ReadInt32();
-            B = reader.ReadInt32();
-            C = reader.ReadInt32();
-            D = reader.ReadInt32();
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = reader.ReadInt32();
+            }
+        }
+
+        public int GetIndex(int which)
+        {
+            return values[which];
+        }
+
+        public void SetIndex(int which, int value)
+        {
+            values[which] = value;
         }
 
         public override bool Equals(object obj)
         {
-            if (!(obj is CoordinateReferenceTuple))
+            var crt = obj as CoordinateReferenceTuple;
+            if (null == crt)
+            {
                 return false;
+            }
 
-            return Equals((CoordinateReferenceTuple)obj);
+            return Equals(crt);
         }
 
         public bool Equals(CoordinateReferenceTuple other)
         {
-            return (A == other.A && B == other.B && C == other.C && D == other.D);
+            if(null == other) { return false; }
+
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (values[i] != other.values[i])
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public override int GetHashCode()
         {
-            return A^B^C^D;
+            return values[0] ^ values[1] ^ values[2] ^ values[3];
         }
 
         public static bool operator ==(CoordinateReferenceTuple left, CoordinateReferenceTuple right)
         {
+            if(null == left || null == right)
+            {
+                return false;
+            }
             return left.Equals(right);
         }
 
         public static bool operator !=(CoordinateReferenceTuple left, CoordinateReferenceTuple right)
         {
+            if (null == left || null == right)
+            {
+                return false;
+            }
             return !left.Equals(right);
         }
     }

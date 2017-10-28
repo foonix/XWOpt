@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 
 namespace SchmooTech.XWOpt.OptNode
 {
+    [CLSCompliant(false)]
     public class TexturePallet
     {
         // Number of pallets is implicit in the format.
@@ -24,6 +25,24 @@ namespace SchmooTech.XWOpt.OptNode
                     pallets[i, j] = reader.ReadUInt16();
                 }
             }
+        }
+
+        // An indexer *is* a method. =P
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1023:IndexersShouldNotBeMultidimensional")]
+        public ushort this[int palletNumber, int which]
+        {
+            get { return GetValue(palletNumber, which); }
+            set { SetValue(palletNumber, which, value); }
+        }
+
+        public void SetValue(int palletNumber, int which, ushort color)
+        {
+            pallets[palletNumber, which] = color;
+        }
+
+        public ushort GetValue(int palletNumber, int which)
+        {
+            return pallets[palletNumber, which];
         }
     }
 }

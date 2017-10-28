@@ -27,6 +27,11 @@ namespace SchmooTech.XWOpt.OptNode
     {
         Collection<BaseNode> children = new Collection<BaseNode>();
 
+        public Collection<BaseNode> Children {
+            get { return children; }
+            private set { children = value; }
+        }
+
         internal BranchNode() : base() { }
         internal BranchNode(OptReader reader) : base(reader)
         {
@@ -37,7 +42,7 @@ namespace SchmooTech.XWOpt.OptNode
         {
             foreach (var child in reader.ReadChildren(this))
             {
-                children.Add(child);
+                Children.Add(child);
             }
         }
 
@@ -45,7 +50,7 @@ namespace SchmooTech.XWOpt.OptNode
         {
             foreach (var child in reader.ReadChildren(count, jumpListOffset, this))
             {
-                children.Add(child);
+                Children.Add(child);
             }
         }
 
@@ -53,7 +58,7 @@ namespace SchmooTech.XWOpt.OptNode
             where T : BaseNode
         {
             var found = new Collection<T>();
-            foreach (BaseNode child in children)
+            foreach (BaseNode child in Children)
             {
                 if (child is T)
                 {

@@ -102,5 +102,22 @@ namespace SchmooTech.XWOpt.OptNode
             reader.Seek(palletOffset);
             pallet = new TexturePallet(reader);
         }
+
+        /// <summary>
+        /// Generates RGB565 image from pallet and color data.
+        /// </summary>
+        /// <param name="palletNumber">Which pallet to use when generating the image (0-15)</param>
+        /// <returns>byte[] containing the image, in bottom left to top right order.</returns>
+        public byte[] ToRgb565(int palletNumber)
+        {
+            var img = new Byte[texturePalletRefs.Length * 2];
+
+            for (int i = 0; i < texturePalletRefs.Length; i++)
+            {
+                Array.Copy(BitConverter.GetBytes(pallet[palletNumber, texturePalletRefs[i]]), 0, img, i * 2, 2);
+            }
+
+            return img;
+        }
     }
 }

@@ -26,15 +26,15 @@ namespace SchmooTech.XWOpt.OptNode
 {
     public class BaseNode
     {
-        // For debugging the read process
-        private readonly long offsetInFile = 0;
-
-        public long OffsetInFile => offsetInFile;
+        /// <summary>
+        /// Offset at which this node was read from the file.  Use for read debugging.
+        /// </summary>
+        public long OffsetInFile { get; private set; }
 
         internal BaseNode() { }
         internal BaseNode(OptReader opt)
         {
-            offsetInFile = opt.BaseStream.Position;
+            OffsetInFile = opt.BaseStream.Position;
         }
     }
 }
