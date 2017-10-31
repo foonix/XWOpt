@@ -35,8 +35,6 @@ namespace SchmooTech.XWOpt.OptNode
 
         private int edgeCount;
 
-        static Vector3Adapter<TVector3> v3Adapter = new Vector3Adapter<TVector3>();
-
         [SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
         private Collection<CoordinateReferenceTuple> vertexRef;
         [SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
@@ -81,7 +79,7 @@ namespace SchmooTech.XWOpt.OptNode
                 vertexNormalRef.Add(new CoordinateReferenceTuple(reader));
             }
 
-            faceNormals = v3Adapter.ReadCollection(reader, count);
+            faceNormals = reader.ReadVectorCollection<TVector3>(count);
 
             basisVectors = new Collection<TextureBasisVectors<TVector3>>();
             for (int i = 0; i < count; i++)
@@ -95,8 +93,8 @@ namespace SchmooTech.XWOpt.OptNode
                 {
                     reader.logger(e.Message);
                     var bv = new TextureBasisVectors<TVector3>();
-                    bv.AcrossTop = v3Adapter.Zero();
-                    bv.AcrossTop = v3Adapter.Zero();
+                    bv.AcrossTop = (TVector3)reader.V3Adapter.Zero();
+                    bv.AcrossTop = (TVector3)reader.V3Adapter.Zero();
                     BasisVectors.Add(bv);
                 }
             }

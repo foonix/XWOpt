@@ -28,6 +28,9 @@ using System.Globalization;
 
 namespace SchmooTech.XWOpt
 {
+
+    public delegate TVector3 CoordinateSystemConverter<TVector3>(TVector3 vector);
+
     public class OptFile<TVector2, TVector3>
     {
         // The number that is subtracted from the file's internal pointers to get the actual file position.
@@ -42,6 +45,8 @@ namespace SchmooTech.XWOpt
         public short UnknownWord { get => unknownWord; set => unknownWord = value; }
         public Action<string> Logger { get => logger; set => logger = value; }
         public Collection<BaseNode> RootNodes { get; private set; }
+        public CoordinateSystemConverter<TVector3> RotateFromOptSpace { get; set; }
+        public CoordinateSystemConverter<TVector3> RotateToOptSpace { get; set; }
 
         public OptFile()
         {
@@ -54,6 +59,11 @@ namespace SchmooTech.XWOpt
                 var reader = new OptReader(stream, Logger);
                 reader.Vector2T = typeof(TVector2);
                 reader.Vector3T = typeof(TVector3);
+                reader.V2Adapter = new Vector2Adapter<TVector2>();
+                reader.V3Adapter = new Vector3Adapter<TVector3>()
+                {
+                    RotateFromOptSpace = RotateFromOptSpace,
+                };
 
                 // Version is stored as negative int.
                 reader.version = version = -reader.ReadInt32();

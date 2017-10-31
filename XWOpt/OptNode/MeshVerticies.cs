@@ -25,11 +25,7 @@ namespace SchmooTech.XWOpt.OptNode
 {
     public class MeshVertices<TVector3> : BaseNode
     {
-        private Collection<TVector3> vertices;
-
-        static Vector3Adapter<TVector3> v3adapter = new Vector3Adapter<TVector3>();
-
-        public Collection<TVector3> Vertices { get => vertices; }
+        public Collection<TVector3> Vertices { get; private set; }
 
         internal MeshVertices(OptReader reader) : base(reader)
         {
@@ -41,7 +37,7 @@ namespace SchmooTech.XWOpt.OptNode
 
             reader.FollowPointerToNextByte(this);
 
-            vertices = v3adapter.ReadCollection(reader, count);
+            Vertices = reader.ReadVectorCollection<TVector3>(count);
         }
     }
 }

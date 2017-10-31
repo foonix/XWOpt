@@ -29,7 +29,6 @@ namespace SchmooTech.XWOpt.OptNode
 
         public Collection<BaseNode> Children {
             get { return children; }
-            private set { children = value; }
         }
 
         internal BranchNode() : base() { }

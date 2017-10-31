@@ -72,8 +72,6 @@ namespace SchmooTech.XWOpt.OptNode
 
         private long targetingGroupId;
 
-        static Vector3Adapter<TVector3> v3Adapter = new Vector3Adapter<TVector3>();
-
         public PartType PartType { get => partType; set => partType = value; }
         public int ExplosionType { get => explosionType; set => explosionType = value; }
         public TVector3 Span { get => span; set => span = value; }
@@ -93,10 +91,10 @@ namespace SchmooTech.XWOpt.OptNode
             partType = (PartType)reader.ReadUInt32();
             ExplosionType = reader.ReadInt32();
 
-            v3Adapter.Read(reader, ref span);
-            v3Adapter.Read(reader, ref centerPoint);
-            v3Adapter.Read(reader, ref hitboxLowerCorner);
-            v3Adapter.Read(reader, ref hitboxUpperCorner);
+            span = reader.ReadVector<TVector3>();
+            centerPoint = reader.ReadVector<TVector3>();
+            hitboxLowerCorner = reader.ReadVector<TVector3>();
+            hitboxUpperCorner = reader.ReadVector<TVector3>();
 
             targetingGroupId = reader.ReadUInt32();
         }

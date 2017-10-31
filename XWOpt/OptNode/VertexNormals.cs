@@ -27,8 +27,6 @@ namespace SchmooTech.XWOpt.OptNode
     {
         private Collection<TVector3> normals;
 
-        static Vector3Adapter<TVector3> v3adapter = new Vector3Adapter<TVector3>();
-
         public Collection<TVector3> Normals { get => normals; }
 
         internal VertexNormals(OptReader reader) : base(reader)
@@ -41,7 +39,7 @@ namespace SchmooTech.XWOpt.OptNode
 
             reader.FollowPointerToNextByte(this);
 
-            normals = v3adapter.ReadCollection(reader, count);
+            normals = reader.ReadVectorCollection<TVector3>(count);
         }
     }
 }

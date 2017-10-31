@@ -67,6 +67,7 @@
     <Compile Include="TextureBasisVectors.cs" />
     <Compile Include="Vector2Adapter.cs" />
     <Compile Include="Vector3Adapter.cs" />
+    <Compile Include="VectorAdapter.cs" />
   </ItemGroup>
   <ItemGroup>
     <CodeAnalysisDictionary Include="CustomDictionary.xml" />

@@ -42,6 +42,22 @@ namespace XWOpt_test
 
         OptFile<Vector2, Vector3> opt;
 
+
+        // XvT engine -> Unity engine
+        // unity: forward is +z, right is +x,    up is +y
+        // XvT:   forward is -y, right is +x(?), up is +z
+        static readonly Matrix4x4 CoordinateConverter = new Matrix4x4(
+            1, 0, 0, 0,
+            0, 0, -1, 0,
+            0, 1, 0, 0,
+            0, 0, 0, 1
+        );
+
+        Vector3 RotateIntoUnitySpace(Vector3 v)
+        {
+            return Vector3.Transform(v, CoordinateConverter);
+        }
+
         [SetUp]
         protected void SetUp()
         {
@@ -75,6 +91,17 @@ namespace XWOpt_test
             Assert.That(hardpoint.Location, Is.EqualTo(new Vector3(-17f, -70f, -32f)));
 
             Assert.That(opt.FindAll<Hardpoint<Vector3>>().Count(), Is.EqualTo(2));
+
+            var convertedOpt = new OptFile<Vector2, Vector3>()
+            {
+                RotateFromOptSpace = new CoordinateSystemConverter<Vector3>(RotateIntoUnitySpace),
+                Logger = msg => TestContext.Out.WriteLine(msg),
+            };
+
+            convertedOpt.Read(TieFighter);
+            var rotatedHardpoint = convertedOpt.FindAll<Hardpoint<Vector3>>()[0];
+            Assert.That(rotatedHardpoint, Is.InstanceOf(typeof(Hardpoint<Vector3>)));
+            Assert.That(rotatedHardpoint.Location, Is.EqualTo(new Vector3(-17f, -32f, 70f)));
         }
 
         [Test, TestCaseSource("GetTestCases")]

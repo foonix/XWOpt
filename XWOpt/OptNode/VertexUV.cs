@@ -27,8 +27,6 @@ namespace SchmooTech.XWOpt.OptNode
     {
         private Collection<TVector2> vertices;
 
-        static Vector2Adapter<TVector2> v2adapter = new Vector2Adapter<TVector2>();
-
         public Collection<TVector2> Vertices { get => vertices; }
 
         internal VertexUV(OptReader reader) : base(reader)
@@ -41,7 +39,7 @@ namespace SchmooTech.XWOpt.OptNode
 
             reader.FollowPointerToNextByte(this);
 
-            vertices = v2adapter.ReadCollection(reader, count);
+            vertices = reader.ReadVectorCollection<TVector2>(count);
         }
     }
 }

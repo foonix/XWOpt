@@ -24,19 +24,14 @@ namespace SchmooTech.XWOpt.OptNode
     class EngineGlow<TVector3> : BaseNode
     {
         // RGBA colors
-        private long innerColor, outerColor;
-        private TVector3 center, x, y, z;
-
-        public long InnerColor { get => innerColor; set => innerColor = value; }
-        public long OuterColor { get => outerColor; set => outerColor = value; }
-        public TVector3 Center { get => Center; set => Center = value; }
+        public long InnerColor { get; set; }
+        public long OuterColor { get; set; }
+        public TVector3 Center { get; set; }
 
         // Unknown use vectors.
-        public TVector3 X { get => x; set => x = value; }
-        public TVector3 Y { get => y; set => y = value; }
-        public TVector3 Z { get => z; set => z = value; }
-
-        static Vector3Adapter<TVector3> v3Adapter = new Vector3Adapter<TVector3>();
+        public TVector3 X { get; set; }
+        public TVector3 Y { get; set; }
+        public TVector3 Z { get; set; }
 
         internal EngineGlow(OptReader reader) : base(reader)
         {
@@ -46,14 +41,14 @@ namespace SchmooTech.XWOpt.OptNode
             reader.FollowPointerToNextByte(this);
             reader.ReadUnknownUseValue(0, this);
 
-            innerColor = reader.ReadInt32();
-            outerColor = reader.ReadInt32();
-            v3Adapter.Read(reader, ref center);
+            InnerColor = reader.ReadInt32();
+            OuterColor = reader.ReadInt32();
+            Center = reader.ReadVector<TVector3>();
 
             // Cargo culting the order.
-            v3Adapter.Read(reader, ref y);
-            v3Adapter.Read(reader, ref z);
-            v3Adapter.Read(reader, ref x);
+            Y = reader.ReadVector<TVector3>();
+            Z = reader.ReadVector<TVector3>();
+            X = reader.ReadVector<TVector3>();
         }
     }
 }

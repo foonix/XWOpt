@@ -27,6 +27,7 @@ using SchmooTech.XWOpt.OptNode.Types;
 using System.Reflection;
 using System.Text;
 using System.Globalization;
+using System.Collections.ObjectModel;
 
 namespace SchmooTech.XWOpt
 {
@@ -40,8 +41,11 @@ namespace SchmooTech.XWOpt
 
         // Making this a generic type parameter results in a generic parameter explosion where every node type 
         // needs TVector3 and TVector2 type parameters to use the reader wether they use those types or not.
-        public Type Vector3T { get; set; }
-        public Type Vector2T { get; set; }
+        internal Type Vector2T { get; set; }
+        internal Type Vector3T { get; set; }
+
+        internal VectorAdapter V2Adapter { get; set; }
+        internal VectorAdapter V3Adapter { get; set; }
 
         internal Action<string> logger;
 
@@ -91,7 +95,7 @@ namespace SchmooTech.XWOpt
                 int nextNode = ReadInt32();
                 if (nextNode != 0)
                 {
-                    nodes.Add(ReadNodeAt(nextNode));
+                    nodes.Add(ReadNodeAt(nextNode, context));
                 }
             }
 
@@ -99,7 +103,7 @@ namespace SchmooTech.XWOpt
         }
 
         // Instantiates the correct node type based on IDs found.
-        public BaseNode ReadNodeAt(int offset)
+        public BaseNode ReadNodeAt(int offset, object context)
         {
             int preHeaderOffset = 0;
 
@@ -154,7 +158,7 @@ namespace SchmooTech.XWOpt
                         case (int)GenericMinor.EngineGlow:
                             return MakeGenericNode(typeof(EngineGlow<>), new Type[] { Vector3T });
                         default:
-                            logger("Found unknown node type " + majorId + " " + minorId + " at " + BaseStream.Position);
+                            logger("Found unknown node type " + majorId + " " + minorId + " at " + BaseStream.Position + " context:" + context);
                             return new BaseNode(this);
                     }
 
@@ -166,7 +170,7 @@ namespace SchmooTech.XWOpt
                         case (int)TextureMinor.TextureWithAlpha:
                             return new Texture(this, preHeaderOffset);
                         default:
-                            logger("Found unknown node type " + majorId + " " + minorId + " at " + BaseStream.Position);
+                            logger("Found unknown node type " + majorId + " " + minorId + " at " + BaseStream.Position + " context:" + context);
                             return new Texture(this, preHeaderOffset);
                     }
                 default:
@@ -274,6 +278,32 @@ namespace SchmooTech.XWOpt
             BaseStream.Seek(maxLen - i, SeekOrigin.Current);
 
             return Encoding.ASCII.GetString(buffer);
+        }
+
+        internal TVector ReadVector<TVector>()
+        {
+            if (typeof(TVector) == Vector2T)
+            {
+                return (TVector)V2Adapter.Read(this);
+            }
+            else if (typeof(TVector) == Vector3T)
+            {
+                return (TVector)V3Adapter.Read(this);
+            }
+            throw new ArgumentException("Unknown vector type.");
+        }
+
+        internal Collection<TVector> ReadVectorCollection<TVector>(int count)
+        {
+            if (typeof(TVector) == Vector2T)
+            {
+                return (Collection<TVector>)V2Adapter.ReadCollection(this, count);
+            }
+            else if (typeof(TVector) == Vector3T)
+            {
+                return (Collection<TVector>)V3Adapter.ReadCollection(this, count);
+            }
+            throw new ArgumentException("Unknown vector type.");
         }
     }
 }

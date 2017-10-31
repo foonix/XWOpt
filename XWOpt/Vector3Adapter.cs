@@ -25,10 +25,12 @@ using System.Reflection;
 
 namespace SchmooTech.XWOpt
 {
-    internal class Vector3Adapter<TVector3>
+    internal class Vector3Adapter<TVector3> : VectorAdapter
     {
         ConstructorInfo vector3Cotr;
         FieldInfo X, Y, Z;
+        internal CoordinateSystemConverter<TVector3> RotateFromOptSpace { get; set; }
+        internal CoordinateSystemConverter<TVector3> RotateToOptSpace { get; set; }
 
         public Vector3Adapter()
         {
@@ -44,39 +46,25 @@ namespace SchmooTech.XWOpt
             }
         }
 
-        // Using ref because Vector3T can't be initialized here.
-        internal void Read(OptReader reader, ref TVector3 v)
+        internal override object Read(OptReader reader)
         {
-            TypedReference typedRef = __makeref(v);
-            X.SetValueDirect(typedRef, reader.ReadSingle());
-            Y.SetValueDirect(typedRef, reader.ReadSingle());
-            Z.SetValueDirect(typedRef, reader.ReadSingle());
-        }
+            var v = vector3Cotr.Invoke(new object[] { reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle() });
 
-        internal TVector3 Read(OptReader reader)
-        {
-            return (TVector3)vector3Cotr.Invoke(new object[] { reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle() });
-        }
-
-        internal TVector3[] ReadArray(OptReader reader, int count)
-        {
-            var v3Array = new TVector3[count];
-
-            for (int i = 0; i < count; i++)
+            if (null != RotateFromOptSpace)
             {
-                Read(reader, ref v3Array[i]);
+                v = RotateFromOptSpace((TVector3)v);
             }
 
-            return v3Array;
+            return v;
         }
 
-        internal Collection<TVector3> ReadCollection(OptReader reader, int count)
+        internal override object ReadCollection(OptReader reader, int count)
         {
             var collection = new Collection<TVector3>();
 
             for (int i = 0; i < count; i++)
             {
-                collection.Add(Read(reader));
+                collection.Add((TVector3)Read(reader));
             }
 
             return collection;
@@ -87,9 +75,9 @@ namespace SchmooTech.XWOpt
             throw new NotImplementedException();
         }
 
-        internal TVector3 Zero()
+        internal override object Zero()
         {
-            return (TVector3)vector3Cotr.Invoke(new object[] { 0, 0, 0 });
+            return vector3Cotr.Invoke(new object[] { 0, 0, 0 });
         }
     }
 }

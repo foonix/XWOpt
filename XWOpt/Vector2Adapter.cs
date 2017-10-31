@@ -25,7 +25,7 @@ using System.Reflection;
 
 namespace SchmooTech.XWOpt
 {
-    class Vector2Adapter<TVector2>
+    class Vector2Adapter<TVector2> : VectorAdapter
     {
         // TODO: Call constructor if ref type.
         ConstructorInfo vector3Cotr;
@@ -44,38 +44,18 @@ namespace SchmooTech.XWOpt
             }
         }
 
-        // Using ref because Vector3T can't be initialized here.
-        internal void Read(OptReader reader, ref TVector2 v)
-        {
-            TypedReference typedRef = __makeref(v);
-            X.SetValueDirect(typedRef, reader.ReadSingle());
-            Y.SetValueDirect(typedRef, reader.ReadSingle());
-        }
-
-        internal TVector2 Read(OptReader reader)
+        internal override object Read(OptReader reader)
         {
             return (TVector2)vector3Cotr.Invoke(new object[] { reader.ReadSingle(), reader.ReadSingle() });
         }
 
-        internal TVector2[] ReadArray(OptReader reader, int count)
-        {
-            var v3Array = new TVector2[count];
-
-            for (int i = 0; i < count; i++)
-            {
-                Read(reader, ref v3Array[i]);
-            }
-
-            return v3Array;
-        }
-
-        internal Collection<TVector2> ReadCollection(OptReader reader, int count)
+        internal override object ReadCollection(OptReader reader, int count)
         {
             var collection = new Collection<TVector2>();
 
             for (int i = 0; i < count; i++)
             {
-                collection.Add(Read(reader));
+                collection.Add((TVector2)Read(reader));
             }
 
             return collection;
@@ -84,6 +64,11 @@ namespace SchmooTech.XWOpt
         internal void Write()
         {
             throw new NotImplementedException();
+        }
+
+        internal override object Zero()
+        {
+            return vector3Cotr.Invoke(new object[] { 0, 0 });
         }
     }
 }

@@ -10,16 +10,14 @@ namespace SchmooTech.XWOpt
         private TVector3 accrossTop;
         private TVector3 downSide;
 
-        static Vector3Adapter<TVector3> v3adapter = new Vector3Adapter<TVector3>();
-
         public TVector3 AcrossTop { get => accrossTop; set => accrossTop = value; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "DownSide")]
         public TVector3 DownSide { get => downSide; set => downSide = value; }
 
         internal TextureBasisVectors(OptReader reader)
         {
-            accrossTop = v3adapter.Read(reader);
-            downSide = v3adapter.Read(reader);
+            accrossTop = reader.ReadVector<TVector3>();
+            downSide = reader.ReadVector<TVector3>();
         }
 
         public override bool Equals(object obj)

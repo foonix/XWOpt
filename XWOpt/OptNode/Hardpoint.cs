@@ -62,8 +62,6 @@ namespace SchmooTech.XWOpt.OptNode
         private WeaponType weaponType;
         private TVector3 location;
 
-        static Vector3Adapter<TVector3> v3Adapter = new Vector3Adapter<TVector3>();
-
         public WeaponType WeaponType { get => weaponType; set => weaponType = value; }
         public TVector3 Location { get => location; set => location = value; }
 
@@ -77,7 +75,7 @@ namespace SchmooTech.XWOpt.OptNode
 
             weaponType = (WeaponType)reader.ReadUInt32();
 
-            v3Adapter.Read(reader, ref location);
+            location = reader.ReadVector<TVector3>();
         }
     }
 }
