@@ -21,7 +21,6 @@
 
 using System;
 using System.IO;
-using System.Collections.Generic;
 using SchmooTech.XWOpt.OptNode;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -33,17 +32,11 @@ namespace SchmooTech.XWOpt
 
     public class OptFile<TVector2, TVector3>
     {
-        // The number that is subtracted from the file's internal pointers to get the actual file position.
-        private int globalOffset = 0xFF;
-        private int version = 0;
-        private short unknownWord = 0;
-
-        private Action<string> logger;
-
-        public int GlobalOffset { get => globalOffset; set => globalOffset = value; }
-        public int Version { get => version; set => version = value; }
-        public short UnknownWord { get => unknownWord; set => unknownWord = value; }
-        public Action<string> Logger { get => logger; set => logger = value; }
+        // The number that is subtracted from the file's internal pointers to get the actual file position
+        public int GlobalOffset { get; set; } = 0xFF;
+        public int Version { get; set; } = 0;
+        public short UnknownWord { get; set; } = 0;
+        public Action<string> Logger { get; set; }
         public Collection<BaseNode> RootNodes { get; private set; }
         public CoordinateSystemConverter<TVector3> RotateFromOptSpace { get; set; }
         public CoordinateSystemConverter<TVector3> RotateToOptSpace { get; set; }
@@ -56,17 +49,19 @@ namespace SchmooTech.XWOpt
         {
             using (var stream = File.OpenRead(fileName))
             {
-                var reader = new OptReader(stream, Logger);
-                reader.Vector2T = typeof(TVector2);
-                reader.Vector3T = typeof(TVector3);
-                reader.V2Adapter = new Vector2Adapter<TVector2>();
-                reader.V3Adapter = new Vector3Adapter<TVector3>()
+                var reader = new OptReader(stream, Logger)
                 {
-                    RotateFromOptSpace = RotateFromOptSpace,
+                    Vector2T = typeof(TVector2),
+                    Vector3T = typeof(TVector3),
+                    V2Adapter = new Vector2Adapter<TVector2>(),
+                    V3Adapter = new Vector3Adapter<TVector3>()
+                    {
+                        RotateFromOptSpace = RotateFromOptSpace,
+                    }
                 };
 
                 // Version is stored as negative int.
-                reader.version = version = -reader.ReadInt32();
+                reader.version = Version = -reader.ReadInt32();
 
                 // Sanity check file size.
                 int size = reader.ReadInt32() + 8;
@@ -77,10 +72,10 @@ namespace SchmooTech.XWOpt
                 }
 
                 // The bytes preceding this don't count when calculating the offset.
-                reader.globalOffset = globalOffset = reader.ReadInt32() - 8;
+                reader.globalOffset = GlobalOffset = reader.ReadInt32() - 8;
 
                 // Usually 2 in TIE98
-                unknownWord = reader.ReadInt16();
+                UnknownWord = reader.ReadInt16();
 
                 var partCount = reader.ReadInt32();
                 var partListOffset = reader.ReadInt32();
@@ -112,8 +107,7 @@ namespace SchmooTech.XWOpt
                     found.Add((T)child);
                 }
 
-                var branch = child as BranchNode;
-                if (null != branch)
+                if (child is BranchNode branch)
                 {
                     foreach (var node in branch.FindAll<T>())
                     {

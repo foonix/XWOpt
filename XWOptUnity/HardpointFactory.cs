@@ -19,12 +19,31 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-using System;
-using System.Collections.Generic;
+using SchmooTech.XWOpt.OptNode;
+using UnityEngine;
 
 namespace SchmooTech.XWOptUnity
 {
-    public class Class1
+    class HardpointFactory
     {
+        PartFactory _part;
+
+        internal HardpointFactory(PartFactory part)
+        {
+            _part = part;
+        }
+
+        internal GameObject MakeHardpoint(GameObject parent, Hardpoint<Vector3> hardpointNode, PartDescriptor<Vector3> partDescriptor)
+        {
+            var hardpointObj = UnityEngine.Object.Instantiate(_part._craft.HardpointBase) as GameObject;
+            hardpointObj.name = hardpointNode.WeaponType.ToString();
+            hardpointObj.transform.localPosition = hardpointNode.Location;
+            hardpointObj.transform.localRotation = new Quaternion(0, 0, 0, 0);
+            hardpointObj.transform.parent = parent.transform;
+
+            _part._craft.ProcessHardpoint(hardpointObj, partDescriptor, hardpointNode);
+
+            return hardpointObj;
+        }
     }
 }
