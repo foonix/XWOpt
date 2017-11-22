@@ -19,29 +19,52 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+using System.Collections.Generic;
 using SchmooTech.XWOpt.OptNode;
 using UnityEngine;
 
 namespace SchmooTech.XWOptUnity
 {
-    class HardpointFactory
+    internal class TargetGroupFactory
     {
+        int Id { get; set; }
+        PartType Type { get; set; }
+        Vector3 Location { get; set; }
+
+        List<PartFactory> parts = new List<PartFactory>();
         CraftFactory Craft { get; set; }
 
-        internal HardpointFactory(CraftFactory part)
+        TargetPointFactory targetPointFactory;
+
+        internal TargetGroupFactory(DistinctTargetGroupTuple groupTuple, CraftFactory craft)
         {
-            Craft = part;
+            Id = groupTuple.id;
+            Type = groupTuple.type;
+            Location = groupTuple.location;
+            Craft = craft;
+            targetPointFactory = new TargetPointFactory(craft, groupTuple);
         }
 
-        internal GameObject MakeHardpoint(GameObject parent, Hardpoint<Vector3> hardpointNode, PartDescriptor<Vector3> partDescriptor)
+        internal void Add(PartFactory part)
         {
-            var hardpointObj = Object.Instantiate(Craft.HardpointBase) as GameObject;
-            hardpointObj.name = hardpointNode.WeaponType.ToString();
-            Helpers.AttachTransform(parent, hardpointObj, hardpointNode.Location);
+            parts.Add(part);
+        }
 
-            Craft.ProcessHardpoint?.Invoke(hardpointObj, partDescriptor, hardpointNode);
+        internal GameObject CreateTargetGroup(int skin)
+        {
+            var targetGroup = Object.Instantiate(Craft.TargetingGroupBase);
+            targetGroup.name = Type.ToString() + " Target Group";
 
-            return hardpointObj;
+            foreach (var partFactory in parts)
+            {
+                Helpers.AttachTransform(targetGroup, partFactory.CreatePart(skin));
+            }
+
+            Craft.ProcessTargetGroup?.Invoke(targetGroup, Id, Type, Location);
+
+            Helpers.AttachTransform(targetGroup, targetPointFactory.CreateTargetPoint(), Location);
+
+            return targetGroup;
         }
     }
 }

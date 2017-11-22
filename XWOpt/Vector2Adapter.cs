@@ -40,7 +40,7 @@ namespace SchmooTech.XWOpt
 
             if (null == X || null == Y)
             {
-                throw new ArgumentException("Vector2 type must have x, y, and z fields (case insensitive).");
+                throw new ArgumentException("Vector2 type must have x and y fields (case insensitive).");
             }
         }
 

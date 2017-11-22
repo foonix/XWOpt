@@ -239,7 +239,7 @@ namespace SchmooTech.XWOpt
         internal void ReadUnknownUseValue(int expected, object context)
         {
             int found = ReadInt32();
-            if (found != expected)
+            if (found != expected && null != logger)
             {
                 logger(String.Format(CultureInfo.CurrentCulture, "Unknown use field normally containing {0:X} contains {1:X} at {2:X} in a {3}", expected, found, BaseStream.Position, context.ToString()));
             }

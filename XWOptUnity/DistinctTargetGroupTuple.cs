@@ -24,24 +24,47 @@ using UnityEngine;
 
 namespace SchmooTech.XWOptUnity
 {
-    class HardpointFactory
-    {
-        CraftFactory Craft { get; set; }
 
-        internal HardpointFactory(CraftFactory part)
+    internal struct DistinctTargetGroupTuple
+    {
+        internal int id;
+        internal PartType type;
+        internal Vector3 location;
+
+        internal bool Equals(DistinctTargetGroupTuple other)
         {
-            Craft = part;
+            if (other.GetType() != this.GetType())
+            {
+                return false;
+            }
+
+            return this.id == other.id && this.type == other.type && this.location == other.location;
         }
 
-        internal GameObject MakeHardpoint(GameObject parent, Hardpoint<Vector3> hardpointNode, PartDescriptor<Vector3> partDescriptor)
+        public override bool Equals(object obj)
         {
-            var hardpointObj = Object.Instantiate(Craft.HardpointBase) as GameObject;
-            hardpointObj.name = hardpointNode.WeaponType.ToString();
-            Helpers.AttachTransform(parent, hardpointObj, hardpointNode.Location);
+            switch (obj)
+            {
+                case DistinctTargetGroupTuple o:
+                    return this.id == o.id && this.type == o.type && this.location == o.location;
+            }
 
-            Craft.ProcessHardpoint?.Invoke(hardpointObj, partDescriptor, hardpointNode);
+            return false;
+        }
 
-            return hardpointObj;
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
+        public static bool operator ==(DistinctTargetGroupTuple left, DistinctTargetGroupTuple right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(DistinctTargetGroupTuple left, DistinctTargetGroupTuple right)
+        {
+            return !left.Equals(right);
         }
     }
 }

@@ -59,26 +59,48 @@ namespace SchmooTech.XWOpt.OptNode
 
     public class PartDescriptor<TVector3> : BaseNode
     {
-        private PartType partType;
+        /// <summary>
+        /// An enum identifying the type of part.
+        /// Used for targeting, and seems to be used for removing unneded parts on some models.
+        /// </summary>
+        public PartType PartType { get; set; }
 
-        // 0,1,4,5,8,9 = Mesh continues in straight line when destroyed 2,3,6,10 = Mesh breaks off and explodes 7 = destructible parts
-        // Looks like bitmask but not sure
-        private int explosionType;
+        /// <summary>
+        /// 0,1,4,5,8,9 = Mesh continues in straight line when destroyed 2,3,6,10 = Mesh breaks off and explodes 7 = destructible parts
+        /// Looks like bitmask but not sure
+        /// </summary>
+        public int ExplosionType { get; set; }
 
-        private TVector3 span; // width of the hit box
-        private TVector3 centerPoint; // Center point of hit box. For targeting the specific part of the craft with "," key.
-        private TVector3 hitboxLowerCorner; // Lower X,Y,Z bound of the hit box
-        private TVector3 hitboxUpperCorner; // Upper X,Y,Z bound of the hit box
+        /// <summary>
+        /// Width of the hit box
+        /// </summary>
+        public TVector3 HitboxSpan { get; set; }
 
-        private long targetingGroupId;
+        /// <summary>
+        /// Center point of hit box. For targeting the specific part of the craft with "," key.
+        /// </summary>
+        public TVector3 HitboxCenterPoint { get; set; }
 
-        public PartType PartType { get => partType; set => partType = value; }
-        public int ExplosionType { get => explosionType; set => explosionType = value; }
-        public TVector3 Span { get => span; set => span = value; }
-        public TVector3 CenterPoint { get => centerPoint; set => centerPoint = value; }
-        public TVector3 HitboxLowerCorner { get => hitboxLowerCorner; set => hitboxLowerCorner = value; }
-        public TVector3 HitboxUpperCorner { get => hitboxUpperCorner; set => hitboxUpperCorner = value; }
-        public long TargetingGroupId { get => targetingGroupId; set => targetingGroupId = value; }
+        /// <summary>
+        /// Lower X,Y,Z bound of the hit box
+        /// </summary>
+        public TVector3 HitboxLowerCorner { get; set; }
+
+        /// <summary>
+        /// Upper X,Y,Z bound of the hit box
+        /// </summary>
+        public TVector3 HitboxUpperCorner { get; set; }
+
+        /// <summary>
+        /// Parts with the same TargetingGroupId, TargetPoint, and PartType
+        /// are considered the same part for targeting purposes.
+        /// </summary>
+        public int TargetGroupId { get; set; }
+
+        /// <summary>
+        /// Where the target point should be displayed to the user.
+        /// </summary>
+        public TVector3 TargetPoint { get; set; }
 
         internal PartDescriptor(OptReader reader) : base(reader)
         {
@@ -88,15 +110,17 @@ namespace SchmooTech.XWOpt.OptNode
 
             reader.FollowPointerToNextByte(this);
 
-            partType = (PartType)reader.ReadUInt32();
+            PartType = (PartType)reader.ReadUInt32();
             ExplosionType = reader.ReadInt32();
 
-            span = reader.ReadVector<TVector3>();
-            centerPoint = reader.ReadVector<TVector3>();
-            hitboxLowerCorner = reader.ReadVector<TVector3>();
-            hitboxUpperCorner = reader.ReadVector<TVector3>();
+            HitboxSpan = reader.ReadVector<TVector3>();
+            HitboxCenterPoint = reader.ReadVector<TVector3>();
+            HitboxLowerCorner = reader.ReadVector<TVector3>();
+            HitboxUpperCorner = reader.ReadVector<TVector3>();
 
-            targetingGroupId = reader.ReadUInt32();
+            TargetGroupId = reader.ReadInt32();
+
+            TargetPoint = reader.ReadVector<TVector3>();
         }
     }
 }

@@ -5,20 +5,21 @@ namespace SchmooTech.XWOptUnity
 {
     class TargetPointFactory
     {
-        PartFactory _part;
+        CraftFactory Craft { get; set; }
+        DistinctTargetGroupTuple GroupTuple { get; set; }
 
-        internal TargetPointFactory(PartFactory part)
+        internal TargetPointFactory(CraftFactory craft, DistinctTargetGroupTuple groupTuple)
         {
-            _part = part;
+            Craft = craft;
+            GroupTuple = groupTuple;
         }
 
-        internal GameObject CreateTargetPoint(GameObject parent, Vector3 location, PartDescriptor<Vector3> partDescriptor)
+        internal GameObject CreateTargetPoint()
         {
-            var targetPoint = Object.Instantiate(_part._craft.TargetPointBase) as GameObject;
-            targetPoint.name = partDescriptor.PartType.ToString();
-            targetPoint.transform.localPosition = location;
-            targetPoint.transform.localRotation = new Quaternion(0, 0, 0, 0);
-            targetPoint.transform.parent = parent.transform;
+            var targetPoint = Object.Instantiate(Craft.TargetPointBase) as GameObject;
+            targetPoint.name = GroupTuple.type.ToString() + " Target Point";
+
+            // TODO: ProcessTargetPointHandler invocation
 
             return targetPoint;
         }

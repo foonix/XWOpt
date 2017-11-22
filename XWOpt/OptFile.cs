@@ -32,7 +32,12 @@ namespace SchmooTech.XWOpt
 
     public class OptFile<TVector2, TVector3>
     {
-        // The number that is subtracted from the file's internal pointers to get the actual file position
+        /// <summary>
+        ///  This number determines where the rendering engine loads the OPT file into memory.
+        ///  After reading this number, the rest of the file is copied into the given address.
+        ///  To determine the actual location in a file that a pointer points to, we subtract
+        ///  GlobalOffset and the lenght of the data before GlobalOffset from the pointer value.
+        /// </summary>
         public int GlobalOffset { get; set; } = 0xFF;
         public int Version { get; set; } = 0;
         public short UnknownWord { get; set; } = 0;
@@ -40,6 +45,8 @@ namespace SchmooTech.XWOpt
         public Collection<BaseNode> RootNodes { get; private set; }
         public CoordinateSystemConverter<TVector3> RotateFromOptSpace { get; set; }
         public CoordinateSystemConverter<TVector3> RotateToOptSpace { get; set; }
+
+        int preGlobalOffsetHeaderLength = 8;
 
         public OptFile()
         {
@@ -64,15 +71,16 @@ namespace SchmooTech.XWOpt
                 reader.version = Version = -reader.ReadInt32();
 
                 // Sanity check file size.
-                int size = reader.ReadInt32() + 8;
+                int size = reader.ReadInt32() + preGlobalOffsetHeaderLength;
                 if (size != reader.BaseStream.Length)
                 {
-                    Logger(String.Format(CultureInfo.CurrentCulture, "File length expected is {0} but actual lenght is {1}.  File may be corrupt.", size, reader.BaseStream.Length));
-                    throw new InvalidDataException();
+                    var msg = String.Format(CultureInfo.CurrentCulture, "File length expected is {0} but actual lenght is {1}.  File may be corrupt.", size, reader.BaseStream.Length);
+                    Logger(msg);
+                    throw new InvalidDataException(msg);
                 }
 
                 // The bytes preceding this don't count when calculating the offset.
-                reader.globalOffset = GlobalOffset = reader.ReadInt32() - 8;
+                reader.globalOffset = GlobalOffset = reader.ReadInt32() - preGlobalOffsetHeaderLength;
 
                 // Usually 2 in TIE98
                 UnknownWord = reader.ReadInt16();

@@ -44,6 +44,16 @@ namespace SchmooTech.XWOptUnity
     public delegate void ProcessHardpointHandler(GameObject parent, PartDescriptor<Vector3> descriptor, Hardpoint<Vector3> hardpoint);
 
     /// <summary>
+    /// Callback for game specific setup of TargetGroup objects.
+    /// Parts with identical ID, type, and location are treated as the same part in game terms.
+    /// </summary>
+    /// <param name="targetGroup">The targeting group object.  All parts in the same target group are attached as children.</param>
+    /// <param name="id">The ID of the targeting group.</param>
+    /// <param name="type">The type of parts in the group.</param>
+    /// <param name="location">The place on the model that is shown in the targeting window.</param>
+    public delegate void ProcessTargetGroupHandler(GameObject targetGroup, int id, PartType type, Vector3 location);
+
+    /// <summary>
     /// Reads OPT model and helps instantiate GameObjects based on useful data in the file.
     /// </summary>
     public class CraftFactory
@@ -71,6 +81,11 @@ namespace SchmooTech.XWOptUnity
         public GameObject TargetPointBase { get; set; }
 
         /// <summary>
+        /// If set, parts with the same target ID are grouped as children of this object.
+        /// </summary>
+        public GameObject TargetingGroupBase { get; set; }
+
+        /// <summary>
         /// Callback for game specific setup of part objects after instantiation.
         /// </summary>
         public ProcessPartHandler ProcessPart { get; set; }
@@ -81,13 +96,19 @@ namespace SchmooTech.XWOptUnity
         public ProcessHardpointHandler ProcessHardpoint { get; set; }
 
         /// <summary>
+        /// Callback for game specific setup of targeting groups.
+        /// </summary>
+        public ProcessTargetGroupHandler ProcessTargetGroup { get; set; }
+
+        /// <summary>
         /// The shader to use on the materials.  Default is Unity "Standard" shader.
         /// </summary>
         public Shader PartShader { get; set; } = Shader.Find("Standard");
 
         OptFile<Vector2, Vector3> opt = new OptFile<Vector2, Vector3>();
         internal Dictionary<string, Material> materials;
-        List<PartFactory> partFactories = new List<PartFactory>();
+        List<PartFactory> nonTargetGroupedParts = new List<PartFactory>();
+        Dictionary<DistinctTargetGroupTuple, TargetGroupFactory> targetGroups = new Dictionary<DistinctTargetGroupTuple, TargetGroupFactory>();
 
         // XvT engine -> Unity engine
         // unity: forward is +z, right is +x,    up is +y
@@ -125,12 +146,28 @@ namespace SchmooTech.XWOptUnity
 
             foreach (BranchNode shipPart in opt.RootNodes.OfType<BranchNode>())
             {
-                partFactories.Add(
-                    new PartFactory(this, shipPart)
+                var factory = new PartFactory(this, shipPart);
+
+                if (null == factory.descriptor || null == TargetingGroupBase)
+                {
+                    nonTargetGroupedParts.Add(factory);
+                    factory.CreateChildTarget = true;
+                }
+                else
+                {
+                    var groupTuple = new DistinctTargetGroupTuple(factory.descriptor);
+
+                    if (targetGroups.TryGetValue(groupTuple, out TargetGroupFactory group))
                     {
-                        ShipPart = shipPart,
+                        group.Add(factory);
                     }
-                );
+                    else
+                    {
+                        group = new TargetGroupFactory(groupTuple, this);
+                        group.Add(factory);
+                        targetGroups.Add(groupTuple, group);
+                    }
+                }
             }
         }
 
@@ -150,20 +187,22 @@ namespace SchmooTech.XWOptUnity
         /// <summary>
         /// Generates craft object based OPT model.
         /// </summary>
-        /// <param name="skin">Which skin to use.  This is usually the X-Wing IFF number.  If the model has no skins, this is ignored.</param>
+        /// <param name="skin">
+        /// Which skin to use.  This is usually based on which squadron, EG Red, Blue, Gold, Alpha, Beta, etc.
+        /// If the model has no skins, this is ignored.
+        /// </param>
         public GameObject CreateCraftObject(int skin)
         {
             var craft = Object.Instantiate(CraftBase);
 
-            foreach (PartFactory partFactory in partFactories)
+            foreach (var targetGroup in targetGroups)
             {
-                var partObj = partFactory.CreatePart(skin);
+                Helpers.AttachTransform(craft, targetGroup.Value.CreateTargetGroup(skin));
+            }
 
-                // Attach this part to parent.
-                Transform objTransform = partObj.GetComponent<Transform>();
-                objTransform.parent = craft.transform;
-                objTransform.localPosition = new Vector3(0, 0, 0);
-                objTransform.localRotation = new Quaternion(0, 0, 0, 0);
+            foreach (var partFactory in nonTargetGroupedParts)
+            {
+                Helpers.AttachTransform(craft, partFactory.CreatePart(skin));
             }
 
             return craft;

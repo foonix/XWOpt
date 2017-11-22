@@ -33,11 +33,11 @@ namespace SchmooTech.XWOptUnity
         BranchNode _lodNode;
         int _index;
         float _threshold;
-        PartFactory _part;
+        PartFactory Part { get; set; }
 
         internal LodFactory(PartFactory part, BranchNode lodNode, int index, float threshold)
         {
-            _part = part;
+            Part = part;
             _lodNode = lodNode;
             _index = index;
 
@@ -70,7 +70,7 @@ namespace SchmooTech.XWOptUnity
                 }
             }
 
-            return MakeMesh(faceLists, _part.verts, _part.vertNormals, _part.vertUV);
+            return MakeMesh(faceLists, Part.verts, Part.vertNormals, Part.vertUV);
         }
 
         static Mesh MakeMesh(List<FaceList<Vector3>> faceLists, MeshVertices<Vector3> verts, VertexNormals<Vector3> vertNormals, VertexUV<Vector2> vertUV)
@@ -180,9 +180,7 @@ namespace SchmooTech.XWOptUnity
             GameObject lodObj = new GameObject(parent.name + "_LOD" + _index);
             lodObj.AddComponent<MeshFilter>();
             lodObj.AddComponent<MeshRenderer>();
-            lodObj.transform.parent = parent.transform;
-            lodObj.transform.localPosition = new Vector3(0, 0, 0);
-            lodObj.transform.localRotation = new Quaternion(0, 0, 0, 0);
+            Helpers.AttachTransform(parent, lodObj);
 
             var matsUsed = new List<string>();
 
@@ -217,7 +215,7 @@ namespace SchmooTech.XWOptUnity
             Material[] mats = new Material[matsUsed.Count];
             for (int i = 0; i < matsUsed.Count; i++)
             {
-                mats[i] = _part._craft.materials[matsUsed[i]];
+                mats[i] = Part.Craft.materials[matsUsed[i]];
             }
             lodObj.GetComponent<MeshRenderer>().materials = mats;
 

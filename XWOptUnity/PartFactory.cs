@@ -29,6 +29,27 @@ namespace SchmooTech.XWOptUnity
     internal class PartFactory
     {
         internal BranchNode ShipPart { get; set; }
+        internal CraftFactory Craft { get; set; }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
+        internal bool CreateChildTarget
+        {
+            get
+            {
+                return null == targetPoint;
+            }
+            set
+            {
+                if (true == value)
+                {
+                    targetPoint = new TargetPointFactory(Craft, new DistinctTargetGroupTuple(descriptor));
+                }
+                else
+                {
+                    targetPoint = null;
+                }
+            }
+        }
 
         internal PartDescriptor<Vector3> descriptor;
         internal MeshVertices<Vector3> verts;
@@ -36,16 +57,14 @@ namespace SchmooTech.XWOptUnity
         internal VertexNormals<Vector3> vertNormals;
 
         List<LodFactory> _lods;
-        internal CraftFactory _craft;
         HardpointFactory hardpointFactory;
-        TargetPointFactory targetPointFactory;
+        TargetPointFactory targetPoint = null;
 
         internal PartFactory(CraftFactory craft, BranchNode shipPart)
         {
-            _craft = craft;
+            Craft = craft;
             ShipPart = shipPart;
-            hardpointFactory = new HardpointFactory(this);
-            targetPointFactory = new TargetPointFactory(this);
+            hardpointFactory = new HardpointFactory(craft);
 
             // Fetch ship part top level data
             descriptor = ShipPart.Children.OfType<PartDescriptor<Vector3>>().First();
@@ -70,15 +89,12 @@ namespace SchmooTech.XWOptUnity
 
         internal GameObject CreatePart(int skin)
         {
-            var partObj = Object.Instantiate(_craft.PartBase) as GameObject;
+            var partObj = Object.Instantiate(Craft.PartBase) as GameObject;
 
             if (null != descriptor)
             {
                 // Give the part object a useful name in the Unity GUI
-                partObj.name = descriptor.PartType.ToString();
-
-                // Create an object used for targeting.
-                targetPointFactory.CreateTargetPoint(partObj, descriptor.CenterPoint, descriptor);
+                partObj.name = descriptor.PartType.ToString() + " part";
             }
 
             var lods = new List<LOD>();
@@ -100,7 +116,12 @@ namespace SchmooTech.XWOptUnity
                 hardpointFactory.MakeHardpoint(partObj, hardpoint, descriptor);
             }
 
-            _craft.ProcessPart(partObj, descriptor);
+            if (null != targetPoint)
+            {
+                Helpers.AttachTransform(partObj, targetPoint.CreateTargetPoint(), descriptor.HitboxCenterPoint);
+            }
+
+            Craft.ProcessPart?.Invoke(partObj, descriptor);
 
             return partObj;
         }

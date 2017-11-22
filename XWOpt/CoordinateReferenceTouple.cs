@@ -25,11 +25,21 @@ namespace SchmooTech.XWOpt
 
         public int GetIndex(int which)
         {
+            if(which < 0 || which >= values.Length)
+            {
+                throw new ArgumentException("Index out of bounds");
+            }
+
             return values[which];
         }
 
         public void SetIndex(int which, int value)
         {
+            if (which < 0 || which >= values.Length)
+            {
+                throw new ArgumentException("Index out of bounds");
+            }
+
             values[which] = value;
         }
 
