@@ -19,11 +19,11 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-using System.Collections.Generic;
-using UnityEngine;
 using SchmooTech.XWOpt;
 using SchmooTech.XWOpt.OptNode;
+using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace SchmooTech.XWOptUnity
 {

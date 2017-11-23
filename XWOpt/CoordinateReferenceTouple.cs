@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace SchmooTech.XWOpt
 {
@@ -75,19 +72,21 @@ namespace SchmooTech.XWOpt
 
         public static bool operator ==(CoordinateReferenceTuple left, CoordinateReferenceTuple right)
         {
-            if(null == left || null == right)
+            if (ReferenceEquals(left, null))
             {
-                return false;
+                return ReferenceEquals(right, null);
             }
+
             return left.Equals(right);
         }
 
         public static bool operator !=(CoordinateReferenceTuple left, CoordinateReferenceTuple right)
         {
-            if (null == left || null == right)
+            if (ReferenceEquals(left, null))
             {
-                return false;
+                return ReferenceEquals(right, null);
             }
+
             return !left.Equals(right);
         }
     }

@@ -1,5 +1,4 @@
-﻿using SchmooTech.XWOpt.OptNode;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace SchmooTech.XWOptUnity
 {

@@ -54,7 +54,7 @@
     <Compile Include="OptNode\PartDescriptor.cs" />
     <Compile Include="OptNode\SkinSelector.cs" />
     <Compile Include="OptNode\Texture.cs" />
-    <Compile Include="TexturePalletCollection.cs" />
+    <Compile Include="TexturePallet.cs" />
     <Compile Include="OptNode\TextureReferenceByName.cs" />
     <Compile Include="OptNode\RotationInfo.cs" />
     <Compile Include="OptNode\Types\GenericMinor.cs" />

@@ -24,13 +24,23 @@ namespace SchmooTech.XWOptUnity
     struct VertexSplitTuple
     {
         public int vId, uvId, normId;
-        public static bool operator ==(VertexSplitTuple a, VertexSplitTuple b)
+        public static bool operator ==(VertexSplitTuple left, VertexSplitTuple right)
         {
-            return a.vId == b.vId && a.uvId == b.uvId && a.normId == b.normId;
+            if (ReferenceEquals(left, null))
+            {
+                return ReferenceEquals(right, null);
+            }
+
+            return left.Equals(right);
         }
-        public static bool operator !=(VertexSplitTuple a, VertexSplitTuple b)
+        public static bool operator !=(VertexSplitTuple left, VertexSplitTuple right)
         {
-            return a.vId != b.vId || a.uvId != b.uvId || a.normId != b.normId;
+            if (ReferenceEquals(left, null))
+            {
+                return ReferenceEquals(right, null);
+            }
+
+            return !left.Equals(right);
         }
         public override bool Equals(object obj)
         {

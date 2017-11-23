@@ -31,6 +31,15 @@ namespace SchmooTech.XWOptUnity
         internal PartType type;
         internal Vector3 location;
 
+        internal DistinctTargetGroupTuple(PartDescriptor<Vector3> descriptor)
+        {
+            id = descriptor.TargetGroupId;
+            type = descriptor.PartType;
+            // You'd think this would be TargetPoint, but from my testing it seems to be HitBoxCenter.
+            // TODO: Figure out what TargetPoint is actually for.
+            location = descriptor.HitboxCenterPoint;
+        }
+
         internal bool Equals(DistinctTargetGroupTuple other)
         {
             if (other.GetType() != this.GetType())
@@ -59,11 +68,21 @@ namespace SchmooTech.XWOptUnity
 
         public static bool operator ==(DistinctTargetGroupTuple left, DistinctTargetGroupTuple right)
         {
+            if (ReferenceEquals(left, null))
+            {
+                return ReferenceEquals(right, null);
+            }
+
             return left.Equals(right);
         }
 
         public static bool operator !=(DistinctTargetGroupTuple left, DistinctTargetGroupTuple right)
         {
+            if (ReferenceEquals(left, null))
+            {
+                return !ReferenceEquals(right, null);
+            }
+
             return !left.Equals(right);
         }
     }

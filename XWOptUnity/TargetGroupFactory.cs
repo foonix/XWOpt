@@ -19,8 +19,8 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-using System.Collections.Generic;
 using SchmooTech.XWOpt.OptNode;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace SchmooTech.XWOptUnity

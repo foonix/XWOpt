@@ -19,11 +19,11 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-using System;
-using System.IO;
 using SchmooTech.XWOpt.OptNode;
+using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 
 namespace SchmooTech.XWOpt
 {
@@ -54,8 +54,11 @@ namespace SchmooTech.XWOpt
 
         public void Read(string fileName)
         {
-            using (var stream = File.OpenRead(fileName))
+            FileStream stream = null;
+            try
             {
+
+                stream = File.OpenRead(fileName);
                 var reader = new OptReader(stream, Logger)
                 {
                     Vector2T = typeof(TVector2),
@@ -67,19 +70,30 @@ namespace SchmooTech.XWOpt
                     }
                 };
 
-                // Version is stored as negative int.
-                reader.version = Version = -reader.ReadInt32();
+                // Version is stored as negative int, or is omitted if version is 0.
+                var version = reader.ReadInt32();
+                int size;
+                if (version < 0)
+                {
+                    reader.version = Version = Math.Abs(version);
+                    size = reader.ReadInt32() + preGlobalOffsetHeaderLength;
+                }
+                else
+                {
+                    size = version;
+                    version = 0;
+                }
 
                 // Sanity check file size.
-                int size = reader.ReadInt32() + preGlobalOffsetHeaderLength;
                 if (size != reader.BaseStream.Length)
                 {
-                    var msg = String.Format(CultureInfo.CurrentCulture, "File length expected is {0} but actual lenght is {1}.  File may be corrupt.", size, reader.BaseStream.Length);
+                    var msg = String.Format(CultureInfo.CurrentCulture, "File length expected is {0} but actual length is {1}.  File may be corrupt.", size, reader.BaseStream.Length);
                     Logger(msg);
                     throw new InvalidDataException(msg);
                 }
 
                 // The bytes preceding this don't count when calculating the offset.
+                preGlobalOffsetHeaderLength = (int)reader.BaseStream.Position;
                 reader.globalOffset = GlobalOffset = reader.ReadInt32() - preGlobalOffsetHeaderLength;
 
                 // Usually 2 in TIE98
@@ -91,6 +105,18 @@ namespace SchmooTech.XWOpt
                 foreach (var child in reader.ReadChildren(partCount, partListOffset, this))
                 {
                     RootNodes.Add(child);
+                }
+            }
+            catch (FileNotFoundException e)
+            {
+                Logger("Invalid file name " + fileName);
+                throw new FileNotFoundException(e.Message, fileName);
+            }
+            finally
+            {
+                if (null != stream)
+                {
+                    stream.Close();
                 }
             }
         }

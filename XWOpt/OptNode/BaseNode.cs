@@ -19,11 +19,12 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 
 namespace SchmooTech.XWOpt.OptNode
 {
+    /// <summary>
+    /// Common type for all types of nodes in an OPT file.
+    /// </summary>
     public class BaseNode
     {
         /// <summary>

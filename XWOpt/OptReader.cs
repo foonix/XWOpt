@@ -19,15 +19,15 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
 using SchmooTech.XWOpt.OptNode;
 using SchmooTech.XWOpt.OptNode.Types;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Text;
-using System.Globalization;
-using System.Collections.ObjectModel;
 
 namespace SchmooTech.XWOpt
 {

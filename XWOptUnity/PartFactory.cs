@@ -19,10 +19,10 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+using SchmooTech.XWOpt.OptNode;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using SchmooTech.XWOpt.OptNode;
 
 namespace SchmooTech.XWOptUnity
 {

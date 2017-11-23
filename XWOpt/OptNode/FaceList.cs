@@ -22,7 +22,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using SchmooTech.XWOpt;
 
 namespace SchmooTech.XWOpt.OptNode
 {
