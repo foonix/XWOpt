@@ -21,16 +21,18 @@
 
 using SchmooTech.XWOpt.OptNode;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
+using System.Collections;
 
 namespace SchmooTech.XWOpt
 {
 
     public delegate TVector3 CoordinateSystemConverter<TVector3>(TVector3 vector);
 
-    public class OptFile<TVector2, TVector3>
+    public class OptFile<TVector2, TVector3> : IEnumerable<BaseNode>
     {
         /// <summary>
         ///  This number determines where the rendering engine loads the OPT file into memory.
@@ -130,26 +132,25 @@ namespace SchmooTech.XWOpt
             throw new NotImplementedException();
         }
 
-        public Collection<T> FindAll<T>()
-            where T : BaseNode
+        public IEnumerator<BaseNode> GetEnumerator()
         {
-            var found = new Collection<T>();
-            foreach (BaseNode child in RootNodes)
+            foreach (var node in RootNodes)
             {
-                if (child is T)
-                {
-                    found.Add((T)child);
-                }
+                yield return node;
 
-                if (child is BranchNode branch)
+                if (node is NodeCollection branch)
                 {
-                    foreach (var node in branch.FindAll<T>())
+                    foreach (var subNode in branch)
                     {
-                        found.Add(node);
+                        yield return subNode;
                     }
                 }
             }
-            return found;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

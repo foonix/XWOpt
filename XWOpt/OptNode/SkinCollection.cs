@@ -21,9 +21,9 @@
 
 namespace SchmooTech.XWOpt.OptNode
 {
-    public class SkinSelector : BranchNode
+    public class SkinCollection : NodeCollection
     {
-        internal SkinSelector(OptReader reader) : base()
+        internal SkinCollection(OptReader reader) : base()
         {
             ReadChildren(reader);
         }

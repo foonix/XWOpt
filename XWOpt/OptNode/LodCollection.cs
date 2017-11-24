@@ -25,12 +25,12 @@ using System.Globalization;
 
 namespace SchmooTech.XWOpt.OptNode
 {
-    public class MeshLod : BranchNode
+    public class LodCollection : NodeCollection
     {
         private Collection<float> maxRenderDistance = new Collection<float>();
         public Collection<float> MaxRenderDistance { get => maxRenderDistance; }
 
-        internal MeshLod(OptReader reader) : base()
+        internal LodCollection(OptReader reader) : base()
         {
             int lodChildCount = reader.ReadInt32();
             int lodChildOffset = reader.ReadInt32();

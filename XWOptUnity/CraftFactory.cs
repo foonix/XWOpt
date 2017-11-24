@@ -132,7 +132,7 @@ namespace SchmooTech.XWOptUnity
             // So we need to gather all of the textures in the model
             // Making the assumption here that texture names are unique.
             materials = new Dictionary<string, Material>();
-            foreach (var textureNode in opt.FindAll<XWOpt.OptNode.Texture>())
+            foreach (var textureNode in opt.OfType<XWOpt.OptNode.Texture>())
             {
                 materials.Add(
                     textureNode.Name,
@@ -144,7 +144,7 @@ namespace SchmooTech.XWOptUnity
                 );
             }
 
-            foreach (BranchNode shipPart in opt.RootNodes.OfType<BranchNode>())
+            foreach (NodeCollection shipPart in opt.RootNodes.OfType<NodeCollection>())
             {
                 var factory = new PartFactory(this, shipPart);
 

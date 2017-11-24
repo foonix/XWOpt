@@ -28,7 +28,7 @@ namespace SchmooTech.XWOptUnity
 {
     internal class PartFactory
     {
-        internal BranchNode ShipPart { get; set; }
+        internal NodeCollection ShipPart { get; set; }
         internal CraftFactory Craft { get; set; }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
@@ -60,7 +60,7 @@ namespace SchmooTech.XWOptUnity
         HardpointFactory hardpointFactory;
         TargetPointFactory targetPoint = null;
 
-        internal PartFactory(CraftFactory craft, BranchNode shipPart)
+        internal PartFactory(CraftFactory craft, NodeCollection shipPart)
         {
             Craft = craft;
             ShipPart = shipPart;
@@ -68,19 +68,19 @@ namespace SchmooTech.XWOptUnity
 
             // Fetch ship part top level data
             descriptor = ShipPart.Children.OfType<PartDescriptor<Vector3>>().First();
-            verts = ShipPart.FindAll<MeshVertices<Vector3>>().First();
-            vertUV = ShipPart.FindAll<VertexUV<Vector2>>().First();
-            vertNormals = ShipPart.FindAll<VertexNormals<Vector3>>().First();
+            verts = ShipPart.OfType<MeshVertices<Vector3>>().First();
+            vertUV = ShipPart.OfType<VertexUV<Vector2>>().First();
+            vertNormals = ShipPart.OfType<VertexNormals<Vector3>>().First();
 
             // All meshes are contained inside of a MeshLod
             // There is only one MeshLod per part.
             // Each LOD is BranchNode containing a collection of meshes and textures it uses.
-            var lodNode = ShipPart.FindAll<MeshLod>().First<MeshLod>();
+            var lodNode = ShipPart.OfType<LodCollection>().First();
             int lodIndex = 0;
 
             // TODO: sort by threshold order.
             _lods = new List<LodFactory>();
-            foreach (var lodLevel in lodNode.Children.OfType<BranchNode>())
+            foreach (var lodLevel in lodNode.Children.OfType<NodeCollection>())
             {
                 _lods.Add(new LodFactory(this, lodLevel, lodIndex, lodNode.MaxRenderDistance[lodIndex]));
                 lodIndex++;
@@ -111,7 +111,7 @@ namespace SchmooTech.XWOptUnity
             lodGroup.RecalculateBounds();
 
             // Generate hardpoints
-            foreach (var hardpoint in ShipPart.FindAll<Hardpoint<Vector3>>())
+            foreach (var hardpoint in ShipPart.OfType<Hardpoint<Vector3>>())
             {
                 hardpointFactory.MakeHardpoint(partObj, hardpoint, descriptor);
             }

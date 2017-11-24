@@ -134,7 +134,7 @@ namespace SchmooTech.XWOpt
                     switch (minorId)
                     {
                         case (int)GenericMinor.Branch:
-                            return new BranchNode(this) as BaseNode;
+                            return new NodeCollection(this) as BaseNode;
                         case (int)GenericMinor.MeshVertex:
                             return MakeGenericNode(typeof(MeshVertices<>), new Type[] { Vector3T });
                         case (int)GenericMinor.TextureVertex:
@@ -148,11 +148,11 @@ namespace SchmooTech.XWOpt
                         case (int)GenericMinor.Transform:
                             return MakeGenericNode(typeof(RotationInfo<>), new Type[] { Vector3T });
                         case (int)GenericMinor.MeshLod:
-                            return new MeshLod(this) as BaseNode;
+                            return new LodCollection(this) as BaseNode;
                         case (int)GenericMinor.FaceList:
                             return MakeGenericNode(typeof(FaceList<>), new Type[] { Vector3T });
                         case (int)GenericMinor.SkinSelector:
-                            return new SkinSelector(this) as BaseNode;
+                            return new SkinCollection(this) as BaseNode;
                         case (int)GenericMinor.MeshDescriptor:
                             return MakeGenericNode(typeof(PartDescriptor<>), new Type[] { Vector3T });
                         case (int)GenericMinor.EngineGlow:

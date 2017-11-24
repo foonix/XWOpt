@@ -86,11 +86,11 @@ namespace XWOpt_test
         {
             opt.Read(TieFighter);
 
-            var hardpoint = opt.FindAll<Hardpoint<Vector3>>()[0];
+            Hardpoint<Vector3> hardpoint = opt.OfType<Hardpoint<Vector3>>().First();
             Assert.That(hardpoint, Is.InstanceOf(typeof(Hardpoint<Vector3>)));
             Assert.That(hardpoint.Location, Is.EqualTo(new Vector3(-17f, -70f, -32f)));
 
-            Assert.That(opt.FindAll<Hardpoint<Vector3>>().Count(), Is.EqualTo(2));
+            Assert.That(opt.OfType<Hardpoint<Vector3>>().Count(), Is.EqualTo(2));
 
             var convertedOpt = new OptFile<Vector2, Vector3>()
             {
@@ -99,7 +99,7 @@ namespace XWOpt_test
             };
 
             convertedOpt.Read(TieFighter);
-            var rotatedHardpoint = convertedOpt.FindAll<Hardpoint<Vector3>>()[0];
+            var rotatedHardpoint = convertedOpt.OfType<Hardpoint<Vector3>>().First();
             Assert.That(rotatedHardpoint, Is.InstanceOf(typeof(Hardpoint<Vector3>)));
             Assert.That(rotatedHardpoint.Location, Is.EqualTo(new Vector3(-17f, -32f, 70f)));
         }

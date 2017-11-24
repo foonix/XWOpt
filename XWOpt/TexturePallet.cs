@@ -79,12 +79,12 @@ namespace SchmooTech.XWOpt.OptNode
 
         void BoundsCheck(int palletNumber, int which)
         {
-            if (palletNumber <= 0 || palletNumber > PalletCount)
+            if (palletNumber < 0 || palletNumber >= PalletCount)
             {
                 throw new ArgumentException("Pallet number out of range");
             }
 
-            if (which <= 0 || which > ColorCount)
+            if (which < 0 || which >= ColorCount)
             {
                 throw new ArgumentException("Color index out of range");
             }

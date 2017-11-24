@@ -30,12 +30,12 @@ namespace SchmooTech.XWOptUnity
     class LodFactory
     {
         Mesh _mesh;
-        BranchNode _lodNode;
+        NodeCollection _lodNode;
         int _index;
         float _threshold;
         PartFactory Part { get; set; }
 
-        internal LodFactory(PartFactory part, BranchNode lodNode, int index, float threshold)
+        internal LodFactory(PartFactory part, NodeCollection lodNode, int index, float threshold)
         {
             Part = part;
             _lodNode = lodNode;
@@ -197,7 +197,7 @@ namespace SchmooTech.XWOptUnity
                     case TextureReferenceByName t:
                         matsUsed.Add(t.Name);
                         break;
-                    case SkinSelector selector:
+                    case SkinCollection selector:
                         switch (selector.Children[skin])
                         {
                             case XWOpt.OptNode.Texture t:

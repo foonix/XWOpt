@@ -45,14 +45,14 @@
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="OptFile.cs" />
     <Compile Include="OptNode\BaseNode.cs" />
-    <Compile Include="OptNode\BranchNode.cs" />
+    <Compile Include="OptNode\NodeCollection.cs" />
     <Compile Include="OptNode\EngineGlow.cs" />
     <Compile Include="OptNode\FaceList.cs" />
     <Compile Include="OptNode\Hardpoint.cs" />
-    <Compile Include="OptNode\MeshLod.cs" />
+    <Compile Include="OptNode\LodCollection.cs" />
     <Compile Include="OptNode\MeshVerticies.cs" />
     <Compile Include="OptNode\PartDescriptor.cs" />
-    <Compile Include="OptNode\SkinSelector.cs" />
+    <Compile Include="OptNode\SkinCollection.cs" />
     <Compile Include="OptNode\Texture.cs" />
     <Compile Include="TexturePallet.cs" />
     <Compile Include="OptNode\TextureReferenceByName.cs" />

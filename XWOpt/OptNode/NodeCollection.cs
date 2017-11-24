@@ -19,20 +19,24 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace SchmooTech.XWOpt.OptNode
 {
-    public class BranchNode : BaseNode
+    public class NodeCollection : BaseNode, IEnumerable<BaseNode>
+
     {
         Collection<BaseNode> children = new Collection<BaseNode>();
 
-        public Collection<BaseNode> Children {
+        public Collection<BaseNode> Children
+        {
             get { return children; }
         }
 
-        internal BranchNode() : base() { }
-        internal BranchNode(OptReader reader) : base(reader)
+        internal NodeCollection() : base() { }
+        internal NodeCollection(OptReader reader) : base(reader)
         {
             ReadChildren(reader);
         }
@@ -53,27 +57,23 @@ namespace SchmooTech.XWOpt.OptNode
             }
         }
 
-        public Collection<T> FindAll<T>()
-            where T : BaseNode
+        public IEnumerator<BaseNode> GetEnumerator()
         {
-            var found = new Collection<T>();
-            foreach (BaseNode child in Children)
+            foreach (var node in Children)
             {
-                if (child is T)
-                {
-                    found.Add((T)child);
-                }
+                yield return node;
 
-                var branch = child as BranchNode;
-                if (null != branch)
-                {
-                    foreach (var node in branch.FindAll<T>())
-                    {
-                        found.Add(node);
+                if(node is NodeCollection branch) {
+                    foreach (var subNode in branch) {
+                        yield return subNode;
                     }
                 }
             }
-            return found;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }
