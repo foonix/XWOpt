@@ -35,18 +35,28 @@ namespace SchmooTech.XWOptUnity
         float _threshold;
         PartFactory Part { get; set; }
 
+        /// <summary>
+        /// Fudge factor for increasing LOD cutover distance based on increased resolution and improved
+        /// rendering technology on modern computers.
+        ///
+        /// 640x480 -> 1920x1080 = ~3x increased resolution
+        ///
+        /// Add additional subjective multipliers based on anti-aliasing (4x) and texture filtering (4x).
+        ///
+        /// 3 * (4+4)
+        /// </summary>
+        public const float DetailImprovementFudgeFactor = 24f;
+
         internal LodFactory(PartFactory part, NodeCollection lodNode, int index, float threshold)
         {
             Part = part;
             _lodNode = lodNode;
             _index = index;
 
-            if (threshold > 0)
+            if (threshold > 0 && threshold < float.PositiveInfinity)
             {
-                // XvT threshold seems to be based on distance. Unity is based on screen height.
-                // 0.1F is a fudge factor based on increased resolution.
-                // IE scale down the model at 1/10th of where it would be in XvT.
-                _threshold = (float)(0.1F / Math.Atan(1 / threshold));
+                // OPT LOD thresholds are based on distance. Unity is based on screen height.
+                _threshold = (float)(1 / (DetailImprovementFudgeFactor * Math.Atan(1 / threshold)));
             }
             else
             {

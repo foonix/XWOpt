@@ -76,13 +76,19 @@ namespace SchmooTech.XWOptUnity
             // There is only one MeshLod per part.
             // Each LOD is BranchNode containing a collection of meshes and textures it uses.
             var lodNode = ShipPart.OfType<LodCollection>().First();
-            int lodIndex = 0;
 
-            // TODO: sort by threshold order.
+            int lodIndex = 0;
             _lods = new List<LodFactory>();
-            foreach (var lodLevel in lodNode.Children.OfType<NodeCollection>())
+            foreach (var lodLevel in lodNode.ChildrenByRenderDistance)
             {
-                _lods.Add(new LodFactory(this, lodLevel, lodIndex, lodNode.MaxRenderDistance[lodIndex]));
+                if (lodLevel.Value is NodeCollection branch)
+                {
+                    _lods.Add(new LodFactory(this, branch, lodIndex, lodLevel.Key));
+                }
+                else
+                {
+                    Debug.LogError("Skipping LOD" + lodIndex + " as it is not a NodeCollection");
+                }
                 lodIndex++;
             }
         }
@@ -108,7 +114,7 @@ namespace SchmooTech.XWOptUnity
             // Some low LOD meshes comletely replace meshes from other parts.
             // So ensure that all parts cutover at the same distance to avoid flickering.
             lodGroup.localReferencePoint = new Vector3(0, 0, 0);
-            lodGroup.RecalculateBounds();
+            lodGroup.size = Craft.Size;
 
             // Generate hardpoints
             foreach (var hardpoint in ShipPart.OfType<Hardpoint<Vector3>>())

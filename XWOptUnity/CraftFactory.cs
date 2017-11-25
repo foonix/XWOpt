@@ -105,6 +105,11 @@ namespace SchmooTech.XWOptUnity
         /// </summary>
         public Shader PartShader { get; set; } = Shader.Find("Standard");
 
+        /// <summary>
+        /// Overall size of the craft.  Used for LOD cutover.
+        /// </summary>
+        public float Size { get; private set; }
+
         OptFile<Vector2, Vector3> opt = new OptFile<Vector2, Vector3>();
         internal Dictionary<string, Material> materials;
         List<PartFactory> nonTargetGroupedParts = new List<PartFactory>();
@@ -142,6 +147,39 @@ namespace SchmooTech.XWOptUnity
                         mainTexture = MakeUnityTexture(textureNode),
                     }
                 );
+            }
+
+            // Determine total size of the craft.  Used for LOD size.
+            bool foundDescriptor = false;
+            Vector3 upperBound = new Vector3(); // upper bound
+            Vector3 lowerBound = new Vector3(); // lower bound
+            foreach (var descriptor in opt.OfType<PartDescriptor<Vector3>>())
+            {
+                var huc = descriptor.HitboxUpperCorner;
+                var hlc = descriptor.HitboxLowerCorner;
+                // In case origin is outside of all hitbox demensions,
+                // set the bounds based on first hitbox found and expand from there.
+                if (foundDescriptor)
+                {
+                    upperBound = Vector3.Max(upperBound, huc);
+                    lowerBound = Vector3.Min(lowerBound, hlc);
+                }
+                else
+                {
+                    upperBound = new Vector3(huc.x, huc.y, huc.z);
+                    lowerBound = new Vector3(hlc.x, hlc.y, hlc.z);
+                    foundDescriptor = true;
+                }
+            }
+
+            if (foundDescriptor)
+            {
+                Size = (upperBound - lowerBound).magnitude;
+            }
+            else
+            {
+                // TODO: Vertex based size calculation
+                Size = float.PositiveInfinity;
             }
 
             foreach (NodeCollection shipPart in opt.RootNodes.OfType<NodeCollection>())

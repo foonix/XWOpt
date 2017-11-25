@@ -20,6 +20,7 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 
@@ -27,8 +28,15 @@ namespace SchmooTech.XWOpt.OptNode
 {
     public class LodCollection : NodeCollection
     {
-        private Collection<float> maxRenderDistance = new Collection<float>();
-        public Collection<float> MaxRenderDistance { get => maxRenderDistance; }
+        /// <summary>
+        /// Render cutoff distances associated with each LOD, in same order as Children.  (This may be in no logical order.)
+        /// </summary>
+        public Collection<float> MaxRenderDistance { get; } = new Collection<float>();
+
+        /// <summary>
+        /// Dictionary for enumerating LODs based on render cutoff distance, near to far.
+        /// </summary>
+        public Dictionary<float, BaseNode> ChildrenByRenderDistance { get; } = new Dictionary<float, BaseNode>();
 
         internal LodCollection(OptReader reader) : base()
         {
@@ -43,14 +51,20 @@ namespace SchmooTech.XWOpt.OptNode
                 reader.logger(String.Format(CultureInfo.CurrentCulture, "Not the same number of LOD meshes ({0}) as LOD offsets ({1}) at {2:X}", lodChildCount, lodThresholdCount, reader.BaseStream.Position));
             }
 
+            reader.Seek(lodChildOffset);
+            ReadChildren(reader, lodChildCount, lodChildOffset);
+
             reader.Seek(lodThresholdOffset);
-            maxRenderDistance.Clear();
+            MaxRenderDistance.Clear();
             for (int i = 0; i < lodChildCount; i++)
             {
-                maxRenderDistance.Add(reader.ReadSingle());
+                float distance = reader.ReadSingle();
+                MaxRenderDistance.Add(distance);
+                // A distance of 0 represents infinate draw distance
+                // Converting to PositiveInfinity sorts it correctly.
+                distance = distance == 0 ? float.PositiveInfinity : distance;
+                ChildrenByRenderDistance.Add(distance, Children[i]);
             }
-
-            ReadChildren(reader, lodChildCount, lodChildOffset);
         }
     }
 }
