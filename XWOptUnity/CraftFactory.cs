@@ -110,7 +110,8 @@ namespace SchmooTech.XWOptUnity
         /// </summary>
         public float Size { get; private set; }
 
-        OptFile<Vector2, Vector3> opt = new OptFile<Vector2, Vector3>();
+        public OptFile<Vector2, Vector3> Opt { get; private set; }
+
         internal Dictionary<string, Material> materials;
         List<PartFactory> nonTargetGroupedParts = new List<PartFactory>();
         Dictionary<DistinctTargetGroupTuple, TargetGroupFactory> targetGroups = new Dictionary<DistinctTargetGroupTuple, TargetGroupFactory>();
@@ -129,15 +130,17 @@ namespace SchmooTech.XWOptUnity
         {
             FileName = fileName;
 
-            opt.RotateFromOptSpace = new CoordinateSystemConverter<Vector3>(RotateIntoUnitySpace);
-
-            opt.Read(fileName);
+            Opt = new OptFile<Vector2, Vector3>
+            {
+                RotateFromOptSpace = new CoordinateSystemConverter<Vector3>(RotateIntoUnitySpace)
+            };
+            Opt.Read(fileName);
 
             // Some models seem to share textures between parts by placing them at the top level.
             // So we need to gather all of the textures in the model
             // Making the assumption here that texture names are unique.
             materials = new Dictionary<string, Material>();
-            foreach (var textureNode in opt.OfType<XWOpt.OptNode.Texture>())
+            foreach (var textureNode in Opt.OfType<XWOpt.OptNode.Texture>())
             {
                 materials.Add(
                     textureNode.Name,
@@ -153,7 +156,7 @@ namespace SchmooTech.XWOptUnity
             bool foundDescriptor = false;
             Vector3 upperBound = new Vector3(); // upper bound
             Vector3 lowerBound = new Vector3(); // lower bound
-            foreach (var descriptor in opt.OfType<PartDescriptor<Vector3>>())
+            foreach (var descriptor in Opt.OfType<PartDescriptor<Vector3>>())
             {
                 var huc = descriptor.HitboxUpperCorner;
                 var hlc = descriptor.HitboxLowerCorner;
@@ -182,7 +185,7 @@ namespace SchmooTech.XWOptUnity
                 Size = float.PositiveInfinity;
             }
 
-            foreach (NodeCollection shipPart in opt.RootNodes.OfType<NodeCollection>())
+            foreach (NodeCollection shipPart in Opt.RootNodes.OfType<NodeCollection>())
             {
                 var factory = new PartFactory(this, shipPart);
 
@@ -252,7 +255,7 @@ namespace SchmooTech.XWOptUnity
 
             // Generally higher pallet numbers are brighter.
             // Pick a brightness suitable for unity lighting
-            switch (opt.Version)
+            switch (Opt.Version)
             {
                 case (2):
                     // TIE98 pallet 0-7 are 0xCDCD paddding. Pallet 8 is very dark, pallet 15 is normal level.

@@ -23,6 +23,7 @@ using SchmooTech.XWOpt.OptNode;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using UnityEngine;
 
 namespace SchmooTech.XWOptUnity
@@ -197,15 +198,18 @@ namespace SchmooTech.XWOptUnity
             // It seems there is no direct connection between meshes and the textures that go on
             // them besides that the texture preceeds the mesh in this list.
             // So keep track of the last mesh or mesh reference we've seen and apply it to the next mesh.
+            bool meshHasTexture = false;
             foreach (var child in _lodNode.Children)
             {
                 switch (child)
                 {
                     case XWOpt.OptNode.Texture t:
                         matsUsed.Add(t.Name);
+                        meshHasTexture = true;
                         break;
                     case TextureReferenceByName t:
                         matsUsed.Add(t.Name);
+                        meshHasTexture = true;
                         break;
                     case SkinCollection selector:
                         switch (selector.Children[skin])
@@ -217,6 +221,15 @@ namespace SchmooTech.XWOptUnity
                                 matsUsed.Add(t.Name);
                                 break;
                         }
+                        meshHasTexture = true;
+                        break;
+                    case FaceList<Vector3> _:
+                        // Some meshes are not preceeded by a texture.  In this case use a global default texture.
+                        if (!meshHasTexture)
+                        {
+                            matsUsed.Add(Part.Craft.Opt.RootNodes.OfType<XWOpt.OptNode.Texture>().First().Name);
+                        }
+                        meshHasTexture = false;
                         break;
                 }
             }
