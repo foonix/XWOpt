@@ -110,6 +110,19 @@ namespace SchmooTech.XWOptUnity
         /// </summary>
         public float Size { get; private set; }
 
+        /// <summary>
+        /// Generate emissive textures using low light level pallets.
+        /// This allows things like engines and windows to "glow in the dark."
+        /// Note this will cause the lowest possible darkness to be clamped at the original game's lowest level.
+        /// </summary>
+        public bool MakeEmissiveTexture { get; set; } = true;
+
+        /// <summary>
+        /// Exponent for darkening emissive textures.
+        /// Set high enough to make the dark parts nearly black while leaving emissive parts bright.
+        /// </summary>
+        public float EmissiveExponent { get; set; } = 2f;
+
         public OptFile<Vector2, Vector3> Opt { get; private set; }
 
         internal Dictionary<string, Material> materials;
@@ -124,7 +137,10 @@ namespace SchmooTech.XWOptUnity
             new Vector4(0, 0, -1, 0),
             new Vector4(0, 1, 0, 0),
             new Vector4(0, 0, 0, 1)
-        );
+        ) * Matrix4x4.Scale(new Vector3(ScaleFactor, ScaleFactor, ScaleFactor));
+
+        // Size conversion between OPT coordinates and Unity (inch -> meter)
+        public const float ScaleFactor = 1f / 39.37f;
 
         public CraftFactory(string fileName)
         {
@@ -142,14 +158,7 @@ namespace SchmooTech.XWOptUnity
             materials = new Dictionary<string, Material>();
             foreach (var textureNode in Opt.OfType<XWOpt.OptNode.Texture>())
             {
-                materials.Add(
-                    textureNode.Name,
-                    new Material(PartShader)
-                    {
-                        name = textureNode.Name,
-                        mainTexture = MakeUnityTexture(textureNode),
-                    }
-                );
+                materials.Add(textureNode.Name, MakeUnityMaterial(textureNode));
             }
 
             // Determine total size of the craft.  Used for LOD size.
@@ -249,7 +258,7 @@ namespace SchmooTech.XWOptUnity
             return craft;
         }
 
-        Texture2D MakeUnityTexture(XWOpt.OptNode.Texture textureNode)
+        Texture2D MakeUnityTexture(XWOpt.OptNode.Texture textureNode, bool emissive = false)
         {
             int pallet;
 
@@ -258,12 +267,26 @@ namespace SchmooTech.XWOptUnity
             switch (Opt.Version)
             {
                 case (2):
-                    // TIE98 pallet 0-7 are 0xCDCD paddding. Pallet 8 is very dark, pallet 15 is normal level.
-                    pallet = 15;
+                    // TIE98/Xwing98/XvT pallet 0-7 are 0xCDCD paddding. Pallet 8 is very dark, pallet 15 is normal level.
+                    if (emissive)
+                    {
+                        pallet = 8;
+                    }
+                    else
+                    {
+                        pallet = 15;
+                    }
                     break;
                 default:
-                    // medium brigtness.  Pallet 15 is oversaturated.
-                    pallet = 8;
+                    // XWA pallet 8 is medium brigtness.  Pallet 15 is oversaturated.
+                    if (emissive)
+                    {
+                        pallet = 0;
+                    }
+                    else
+                    {
+                        pallet = 8;
+                    }
                     break;
             }
 
@@ -273,6 +296,54 @@ namespace SchmooTech.XWOptUnity
             texture.Apply();
 
             return texture;
+        }
+
+        Material MakeUnityMaterial(XWOpt.OptNode.Texture textureNode)
+        {
+            var mainTexture = MakeUnityTexture(textureNode);
+
+            var material = new Material(PartShader)
+            {
+                name = textureNode.Name,
+            };
+
+            if (MakeEmissiveTexture)
+            {
+                // The lowest lighted pallet will have bright areas representing self-lighting.
+                // So use a texture generated from that pallet as an emissive texture.
+                var emissiveTexture = MakeUnityTexture(textureNode, true);
+
+                var mainPixels = mainTexture.GetPixels();
+                var emissivePixels = emissiveTexture.GetPixels();
+
+                for (int i = 0; i < mainPixels.Length; i++)
+                {
+                    // Lowest brightness pallet has too much ambient light to make a good emissive texture.
+                    // So we try to squash the ambient part without reducing brightness of the emissive features too much.
+                    emissivePixels[i].r = Mathf.Pow(emissivePixels[i].r, EmissiveExponent);
+                    emissivePixels[i].g = Mathf.Pow(emissivePixels[i].g, EmissiveExponent);
+                    emissivePixels[i].b = Mathf.Pow(emissivePixels[i].b, EmissiveExponent);
+
+                    // The material will be oversaturated if the emissive layer is simply layerd over the main texture.
+                    // So reduce the albido by the emissive part.
+                    mainPixels[i] = mainPixels[i] - emissivePixels[i];
+                }
+
+                mainTexture.SetPixels(mainPixels);
+                mainTexture.Apply();
+                emissiveTexture.SetPixels(emissivePixels);
+                emissiveTexture.Apply();
+
+                // Enable emission in the standard shader.
+                material.EnableKeyword("_EMISSION");
+                material.SetTexture("_EmissionMap", emissiveTexture);
+                material.SetColor("_EmissionColor", Color.white);
+                material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+            }
+
+            material.mainTexture = mainTexture;
+
+            return material;
         }
     }
 }
