@@ -139,8 +139,8 @@ namespace SchmooTech.XWOptUnity
             new Vector4(0, 0, 0, 1)
         ) * Matrix4x4.Scale(new Vector3(ScaleFactor, ScaleFactor, ScaleFactor));
 
-        // Size conversion between OPT coordinates and Unity (inch -> meter)
-        public const float ScaleFactor = 1f / 39.37f;
+        // Size conversion between OPT coordinates and Unity
+        public const float ScaleFactor = 0.0244140625f;
 
         public CraftFactory(string fileName)
         {
