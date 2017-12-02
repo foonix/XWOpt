@@ -186,6 +186,13 @@ namespace SchmooTech.XWOptUnity
             return mesh;
         }
 
+        void UseMatIfExists(List<String> matsUsed, string name)
+        {
+            if(Part.Craft.materials.ContainsKey(name)) {
+                matsUsed.Add(name);
+            }
+        }
+
         internal LOD MakeLOD(GameObject parent, int skin)
         {
             GameObject lodObj = new GameObject(parent.name + "_LOD" + _index);
@@ -204,21 +211,21 @@ namespace SchmooTech.XWOptUnity
                 switch (child)
                 {
                     case XWOpt.OptNode.Texture t:
-                        matsUsed.Add(t.Name);
+                        UseMatIfExists(matsUsed, t.Name);
                         meshHasTexture = true;
                         break;
                     case TextureReferenceByName t:
-                        matsUsed.Add(t.Name);
+                        UseMatIfExists(matsUsed, t.Name);
                         meshHasTexture = true;
                         break;
                     case SkinCollection selector:
                         switch (selector.Children[skin])
                         {
                             case XWOpt.OptNode.Texture t:
-                                matsUsed.Add(t.Name);
+                                UseMatIfExists(matsUsed, t.Name);
                                 break;
                             case TextureReferenceByName t:
-                                matsUsed.Add(t.Name);
+                                UseMatIfExists(matsUsed, t.Name);
                                 break;
                         }
                         meshHasTexture = true;
@@ -227,7 +234,7 @@ namespace SchmooTech.XWOptUnity
                         // Some meshes are not preceeded by a texture.  In this case use a global default texture.
                         if (!meshHasTexture)
                         {
-                            matsUsed.Add(Part.Craft.Opt.RootNodes.OfType<XWOpt.OptNode.Texture>().First().Name);
+                            matsUsed.Add("Tex00000");
                         }
                         meshHasTexture = false;
                         break;
