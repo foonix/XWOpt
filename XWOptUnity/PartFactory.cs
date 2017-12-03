@@ -77,19 +77,26 @@ namespace SchmooTech.XWOptUnity
             // Each LOD is BranchNode containing a collection of meshes and textures it uses.
             var lodNode = ShipPart.OfType<LodCollection>().First();
 
-            int lodIndex = 0;
             _lods = new List<LodFactory>();
-            foreach (var lodLevel in lodNode.ChildrenByRenderDistance)
+            int newLodIndex = 0;
+            for (int i = 0; i < lodNode.MaxRenderDistance.Count; i++)
             {
-                if (lodLevel.Value is NodeCollection branch)
+                float distance = lodNode.MaxRenderDistance[i];
+
+                // Out of order LODs are probably broken.  See TIE98 CAL.OPT.
+                // If this distance is greater than the previous distance (smaller number means greater render distance),
+                // then this LOD is occluded by the previous LOD.
+                if (distance > 0 && i > 0 && distance > lodNode.MaxRenderDistance[i - 1]) continue;
+
+                if (lodNode.Children[i] is NodeCollection branch)
                 {
-                    _lods.Add(new LodFactory(this, branch, lodIndex, lodLevel.Key));
+                    _lods.Add(new LodFactory(this, branch, newLodIndex, distance));
+                    newLodIndex++;
                 }
                 else
                 {
-                    Debug.LogError("Skipping LOD" + lodIndex + " as it is not a NodeCollection");
+                    Debug.LogError("Skipping LOD" + newLodIndex + " as it is not a NodeCollection");
                 }
-                lodIndex++;
             }
         }
 

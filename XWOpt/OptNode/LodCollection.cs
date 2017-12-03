@@ -20,7 +20,6 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 
@@ -32,11 +31,6 @@ namespace SchmooTech.XWOpt.OptNode
         /// Render cutoff distances associated with each LOD, in same order as Children.  (This may be in no logical order.)
         /// </summary>
         public Collection<float> MaxRenderDistance { get; } = new Collection<float>();
-
-        /// <summary>
-        /// Dictionary for enumerating LODs based on render cutoff distance, near to far.
-        /// </summary>
-        public Dictionary<float, BaseNode> ChildrenByRenderDistance { get; } = new Dictionary<float, BaseNode>();
 
         internal LodCollection(OptReader reader) : base()
         {
@@ -63,7 +57,6 @@ namespace SchmooTech.XWOpt.OptNode
                 // A distance of 0 represents infinate draw distance
                 // Converting to PositiveInfinity sorts it correctly.
                 distance = distance == 0 ? float.PositiveInfinity : distance;
-                ChildrenByRenderDistance.Add(distance, Children[i]);
             }
         }
     }

@@ -71,18 +71,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>set UnityProjectPlugins="C:\Users\foonix\Documents\Tie Fighter VR\Assets\Plugins\"
-
-echo "$(TargetPath)"
-call "C:\Program Files\Mono\bin\pdb2mdb.bat" "$(TargetPath)"
-echo "$(TargetDir)SchmooTech.XWOpt.dll"
-call "C:\Program Files\Mono\bin\pdb2mdb.bat" "$(TargetDir)\SchmooTech.XWOpt.dll"
-
-echo "doing xcopy to %25UnityProjectPlugins%25"
-xcopy /f /y "$(TargetPath)" %25UnityProjectPlugins%25
-xcopy /f /y "$(TargetDir)SchmooTech.XWOpt.dll" %25UnityProjectPlugins%25
-
-xcopy /f /y *.mdb %25UnityProjectPlugins%25
-</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
 </Project>

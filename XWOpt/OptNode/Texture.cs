@@ -98,8 +98,12 @@ namespace SchmooTech.XWOpt.OptNode
             }
 
             // Now go back and find the texture pallet.
-            reader.Seek(palletOffset);
-            pallet = new TexturePallet(reader);
+            // A few files have invalid palletOffsets.
+            if (palletOffset > reader.globalOffset)
+            {
+                reader.Seek(palletOffset);
+                pallet = new TexturePallet(reader);
+            }
         }
 
         /// <summary>

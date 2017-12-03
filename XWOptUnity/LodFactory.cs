@@ -23,7 +23,6 @@ using SchmooTech.XWOpt.OptNode;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using UnityEngine;
 
 namespace SchmooTech.XWOptUnity
@@ -186,13 +185,6 @@ namespace SchmooTech.XWOptUnity
             return mesh;
         }
 
-        void UseMatIfExists(List<String> matsUsed, string name)
-        {
-            if(Part.Craft.materials.ContainsKey(name)) {
-                matsUsed.Add(name);
-            }
-        }
-
         internal LOD MakeLOD(GameObject parent, int skin)
         {
             GameObject lodObj = new GameObject(parent.name + "_LOD" + _index);
@@ -205,38 +197,40 @@ namespace SchmooTech.XWOptUnity
             // It seems there is no direct connection between meshes and the textures that go on
             // them besides that the texture preceeds the mesh in this list.
             // So keep track of the last mesh or mesh reference we've seen and apply it to the next mesh.
-            bool meshHasTexture = false;
+            // If there is more than one texture preceding a mesh, the last one must be used.
+            string previousTexture = null;
             foreach (var child in _lodNode.Children)
             {
                 switch (child)
                 {
                     case XWOpt.OptNode.Texture t:
-                        UseMatIfExists(matsUsed, t.Name);
-                        meshHasTexture = true;
+                        previousTexture = t.Name;
                         break;
                     case TextureReferenceByName t:
-                        UseMatIfExists(matsUsed, t.Name);
-                        meshHasTexture = true;
+                        previousTexture = t.Name;
                         break;
                     case SkinCollection selector:
                         switch (selector.Children[skin])
                         {
                             case XWOpt.OptNode.Texture t:
-                                UseMatIfExists(matsUsed, t.Name);
+                                previousTexture = t.Name;
                                 break;
                             case TextureReferenceByName t:
-                                UseMatIfExists(matsUsed, t.Name);
+                                previousTexture = t.Name;
                                 break;
                         }
-                        meshHasTexture = true;
                         break;
                     case FaceList<Vector3> _:
                         // Some meshes are not preceeded by a texture.  In this case use a global default texture.
-                        if (!meshHasTexture)
+                        if (null == previousTexture)
                         {
                             matsUsed.Add("Tex00000");
                         }
-                        meshHasTexture = false;
+                        else
+                        {
+                            matsUsed.Add(previousTexture);
+                        }
+                        previousTexture = null;
                         break;
                 }
             }

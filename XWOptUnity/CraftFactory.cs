@@ -106,7 +106,7 @@ namespace SchmooTech.XWOptUnity
         public Shader PartShader { get; set; } = Shader.Find("Standard");
 
         /// <summary>
-        /// Overall size of the craft.  Used for LOD cutover.
+        /// Distance between opposite corners of the box encompasing the craft.  Used for LOD cutover.
         /// </summary>
         public float Size { get; private set; }
 
