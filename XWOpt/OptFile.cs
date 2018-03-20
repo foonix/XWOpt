@@ -29,7 +29,6 @@ using System.Collections;
 
 namespace SchmooTech.XWOpt
 {
-
     public delegate TVector3 CoordinateSystemConverter<TVector3>(TVector3 vector);
 
     public class OptFile<TVector2, TVector3> : IEnumerable<BaseNode>
@@ -59,55 +58,9 @@ namespace SchmooTech.XWOpt
             FileStream stream = null;
             try
             {
-
                 stream = File.OpenRead(fileName);
-                var reader = new OptReader(stream, Logger)
-                {
-                    Vector2T = typeof(TVector2),
-                    Vector3T = typeof(TVector3),
-                    V2Adapter = new Vector2Adapter<TVector2>(),
-                    V3Adapter = new Vector3Adapter<TVector3>()
-                    {
-                        RotateFromOptSpace = RotateFromOptSpace,
-                    }
-                };
 
-                // Version is stored as negative int, or is omitted if version is 0.
-                var version = reader.ReadInt32();
-                int size;
-                if (version < 0)
-                {
-                    reader.version = Version = Math.Abs(version);
-                    size = reader.ReadInt32() + preGlobalOffsetHeaderLength;
-                }
-                else
-                {
-                    size = version;
-                    version = 0;
-                }
-
-                // Sanity check file size.
-                if (size != reader.BaseStream.Length)
-                {
-                    var msg = String.Format(CultureInfo.CurrentCulture, "File length expected is {0} but actual length is {1}.  File may be corrupt.", size, reader.BaseStream.Length);
-                    Logger(msg);
-                    throw new InvalidDataException(msg);
-                }
-
-                // The bytes preceding this don't count when calculating the offset.
-                preGlobalOffsetHeaderLength = (int)reader.BaseStream.Position;
-                reader.globalOffset = GlobalOffset = reader.ReadInt32() - preGlobalOffsetHeaderLength;
-
-                // Usually 2 in TIE98
-                UnknownWord = reader.ReadInt16();
-
-                var partCount = reader.ReadInt32();
-                var partListOffset = reader.ReadInt32();
-                RootNodes = new Collection<BaseNode>();
-                foreach (var child in reader.ReadChildren(partCount, partListOffset, this))
-                {
-                    RootNodes.Add(child);
-                }
+                Read(stream);
             }
             catch (FileNotFoundException e)
             {
@@ -120,6 +73,57 @@ namespace SchmooTech.XWOpt
                 {
                     stream.Close();
                 }
+            }
+        }
+
+        public void Read(Stream stream)
+        {
+            var reader = new OptReader(stream, Logger)
+            {
+                Vector2T = typeof(TVector2),
+                Vector3T = typeof(TVector3),
+                V2Adapter = new Vector2Adapter<TVector2>(),
+                V3Adapter = new Vector3Adapter<TVector3>()
+                {
+                    RotateFromOptSpace = RotateFromOptSpace,
+                }
+            };
+
+            // Version is stored as negative int, or is omitted if version is 0.
+            var version = reader.ReadInt32();
+            int size;
+            if (version < 0)
+            {
+                reader.version = Version = Math.Abs(version);
+                size = reader.ReadInt32() + preGlobalOffsetHeaderLength;
+            }
+            else
+            {
+                size = version;
+                version = 0;
+            }
+
+            // Sanity check file size.
+            if (size != reader.BaseStream.Length)
+            {
+                var msg = String.Format(CultureInfo.CurrentCulture, "File length expected is {0} but actual length is {1}.  File may be corrupt.", size, reader.BaseStream.Length);
+                Logger(msg);
+                throw new InvalidDataException(msg);
+            }
+
+            // The bytes preceding this don't count when calculating the offset.
+            preGlobalOffsetHeaderLength = (int)reader.BaseStream.Position;
+            reader.globalOffset = GlobalOffset = reader.ReadInt32() - preGlobalOffsetHeaderLength;
+
+            // Usually 2 in TIE98
+            UnknownWord = reader.ReadInt16();
+
+            var partCount = reader.ReadInt32();
+            var partListOffset = reader.ReadInt32();
+            RootNodes = new Collection<BaseNode>();
+            foreach (var child in reader.ReadChildren(partCount, partListOffset, this))
+            {
+                RootNodes.Add(child);
             }
         }
 

@@ -22,6 +22,7 @@
 using SchmooTech.XWOpt;
 using SchmooTech.XWOpt.OptNode;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 
@@ -123,7 +124,10 @@ namespace SchmooTech.XWOptUnity
         /// </summary>
         public float EmissiveExponent { get; set; } = 2f;
 
-        public OptFile<Vector2, Vector3> Opt { get; private set; }
+        public OptFile<Vector2, Vector3> Opt { get; private set; } = new OptFile<Vector2, Vector3>
+        {
+            RotateFromOptSpace = new CoordinateSystemConverter<Vector3>(RotateIntoUnitySpace)
+        };
 
         internal Dictionary<string, Material> materials;
         List<PartFactory> nonTargetGroupedParts = new List<PartFactory>();
@@ -146,12 +150,22 @@ namespace SchmooTech.XWOptUnity
         {
             FileName = fileName;
 
-            Opt = new OptFile<Vector2, Vector3>
-            {
-                RotateFromOptSpace = new CoordinateSystemConverter<Vector3>(RotateIntoUnitySpace)
-            };
             Opt.Read(fileName);
 
+            CraftFactoryImpl();
+        }
+
+        public CraftFactory(Stream stream)
+        {
+            FileName = stream.ToString();
+
+            Opt.Read(stream);
+
+            CraftFactoryImpl();
+        }
+
+        private void CraftFactoryImpl()
+        {
             // Some models seem to share textures between parts by placing them at the top level.
             // So we need to gather all of the textures in the model
             // Making the assumption here that texture names are unique.
@@ -221,7 +235,7 @@ namespace SchmooTech.XWOptUnity
             }
         }
 
-        Vector3 RotateIntoUnitySpace(Vector3 v)
+        static Vector3 RotateIntoUnitySpace(Vector3 v)
         {
             return CoordinateConverter * v;
         }
@@ -342,6 +356,8 @@ namespace SchmooTech.XWOptUnity
             }
 
             material.mainTexture = mainTexture;
+
+            material.SetFloat("_Glossiness", 0.1f);
 
             return material;
         }
