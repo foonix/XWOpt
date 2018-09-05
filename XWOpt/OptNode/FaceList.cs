@@ -90,7 +90,7 @@ namespace SchmooTech.XWOpt.OptNode
                 }
                 catch (EndOfStreamException e)
                 {
-                    reader.logger(e.Message);
+                    reader.logger?.Invoke(e.Message);
                     var bv = new TextureBasisVectors<TVector3>
                     {
                         AcrossTop = (TVector3)reader.V3Adapter.Zero()

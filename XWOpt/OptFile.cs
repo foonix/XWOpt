@@ -64,7 +64,7 @@ namespace SchmooTech.XWOpt
             }
             catch (FileNotFoundException e)
             {
-                Logger("Invalid file name " + fileName);
+                Logger?.Invoke("Invalid file name " + fileName);
                 throw new FileNotFoundException(e.Message, fileName);
             }
             finally
@@ -107,7 +107,7 @@ namespace SchmooTech.XWOpt
             if (size != reader.BaseStream.Length)
             {
                 var msg = String.Format(CultureInfo.CurrentCulture, "File length expected is {0} but actual length is {1}.  File may be corrupt.", size, reader.BaseStream.Length);
-                Logger(msg);
+                Logger?.Invoke(msg);
                 throw new InvalidDataException(msg);
             }
 

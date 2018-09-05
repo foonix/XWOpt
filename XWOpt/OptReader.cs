@@ -158,7 +158,7 @@ namespace SchmooTech.XWOpt
                         case (int)GenericMinor.EngineGlow:
                             return MakeGenericNode(typeof(EngineGlow<>), new Type[] { Vector3T });
                         default:
-                            logger("Found unknown node type " + majorId + " " + minorId + " at " + BaseStream.Position + " context:" + context);
+                            logger.Invoke("Found unknown node type " + majorId + " " + minorId + " at " + BaseStream.Position + " context:" + context);
                             return new BaseNode(this);
                     }
 
@@ -170,7 +170,7 @@ namespace SchmooTech.XWOpt
                         case (int)TextureMinor.TextureWithAlpha:
                             return new Texture(this, preHeaderOffset);
                         default:
-                            logger("Found unknown node type " + majorId + " " + minorId + " at " + BaseStream.Position + " context:" + context);
+                            logger?.Invoke("Found unknown node type " + majorId + " " + minorId + " at " + BaseStream.Position + " context:" + context);
                             return new Texture(this, preHeaderOffset);
                     }
                 default:
@@ -212,7 +212,7 @@ namespace SchmooTech.XWOpt
             Seek(offset);
             if (RealOffset(offset) != BaseStream.Position)
             {
-                logger(String.Format("Warning: skipping unexpected {0} bytes at {1:X} in a {2}", RealOffset(offset) - BaseStream.Position, BaseStream.Position, caller.ToString()));
+                logger?.Invoke(String.Format("Warning: skipping unexpected {0} bytes at {1:X} in a {2}", RealOffset(offset) - BaseStream.Position, BaseStream.Position, caller.ToString()));
             }
         }
 
@@ -226,7 +226,7 @@ namespace SchmooTech.XWOpt
         {
             if (RealOffset(offset) != BaseStream.Position)
             {
-                logger(String.Format(CultureInfo.CurrentCulture, "Warning: Skipping unkown data near {0:X} ({1} bytes) in a {2}", BaseStream.Position, RealOffset(offset) - BaseStream.Position, caller.ToString()));
+                logger?.Invoke(String.Format(CultureInfo.CurrentCulture, "Warning: Skipping unkown data near {0:X} ({1} bytes) in a {2}", BaseStream.Position, RealOffset(offset) - BaseStream.Position, caller.ToString()));
                 Seek(offset);
             }
         }
@@ -239,9 +239,9 @@ namespace SchmooTech.XWOpt
         internal void ReadUnknownUseValue(int expected, object context)
         {
             int found = ReadInt32();
-            if (found != expected && null != logger)
+            if (found != expected)
             {
-                logger(String.Format(CultureInfo.CurrentCulture, "Unknown use field normally containing {0:X} contains {1:X} at {2:X} in a {3}", expected, found, BaseStream.Position, context.ToString()));
+                logger?.Invoke(String.Format(CultureInfo.CurrentCulture, "Unknown use field normally containing {0:X} contains {1:X} at {2:X} in a {3}", expected, found, BaseStream.Position, context.ToString()));
             }
         }
 
