@@ -122,6 +122,11 @@ namespace SchmooTech.XWOpt
                 majorId = minorId;
                 minorId = peek;
             }
+            else if (majorId > globalOffset && minorId == 0 && peek == 1)
+            {
+                // This is a weird subtype found in SHUTTLE.OPT
+                return new NameNode(this, majorId);
+            }
             else
             {
                 BaseStream.Seek(-4, SeekOrigin.Current);

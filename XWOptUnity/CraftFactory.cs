@@ -36,13 +36,13 @@ namespace SchmooTech.XWOptUnity
     /// <param name="descriptor">The XWOpt part descriptor associated with the part</param>
     public delegate void ProcessPartHandler(GameObject part, PartDescriptor<Vector3> descriptor);
     /// <summary>
-    /// Callback for game specific setup of part objects after instantiation.
+    /// Callback for game specific setup of hardpoint objects after instantiation.
     /// Use this to modify or filter hardpoints, eg connect them to the game's firing system, etc.
     /// </summary>
-    /// <param name="parent">The unity objet for the ship part containing the hardpoint</param>
+    /// <param name="hardpoint">The unity objet for the ship part containing the hardpoint</param>
     /// <param name="descriptor">The XWOpt PartDescriptor for the part containing the hardpoint</param>
-    /// <param name="hardpoint">The XWOpt Hardpoint causing the hardpoint in question to be created</param>
-    public delegate void ProcessHardpointHandler(GameObject parent, PartDescriptor<Vector3> descriptor, Hardpoint<Vector3> hardpoint);
+    /// <param name="optHardpoint">The XWOpt Hardpoint causing the hardpoint in question to be created</param>
+    public delegate void ProcessHardpointHandler(GameObject hardpoint, PartDescriptor<Vector3> descriptor, Hardpoint<Vector3> optHardpoint);
 
     /// <summary>
     /// Callback for game specific setup of TargetGroup objects.
@@ -126,6 +126,7 @@ namespace SchmooTech.XWOptUnity
 
         public OptFile<Vector2, Vector3> Opt { get; private set; } = new OptFile<Vector2, Vector3>
         {
+            Logger = msg => Debug.Log(msg),
             RotateFromOptSpace = new CoordinateSystemConverter<Vector3>(RotateIntoUnitySpace)
         };
 

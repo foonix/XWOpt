@@ -70,7 +70,8 @@ namespace SchmooTech.XWOptUnity
         {
             List<FaceList<Vector3>> faceLists = new List<FaceList<Vector3>>();
 
-            foreach (var child in _lodNode.Children)
+            // All meshes inside of the LOD node, recursively
+            foreach (var child in _lodNode)
             {
                 switch (child)
                 {
@@ -199,7 +200,23 @@ namespace SchmooTech.XWOptUnity
             // So keep track of the last mesh or mesh reference we've seen and apply it to the next mesh.
             // If there is more than one texture preceding a mesh, the last one must be used.
             string previousTexture = null;
+
+            // Workaround for lambda shuttle.  Fuselage parts have a weird sub-part wrapper.
+            var SearchedNodes = new List<BaseNode>();
             foreach (var child in _lodNode.Children)
+            {
+                switch (child)
+                {
+                    case NameNode named:
+                        SearchedNodes.AddRange((named.Children[0] as NodeCollection).Children);
+                        break;
+                    default:
+                        SearchedNodes.Add(child);
+                        break;
+                }
+            }
+
+            foreach (var child in SearchedNodes)
             {
                 switch (child)
                 {
