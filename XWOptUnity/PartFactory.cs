@@ -52,6 +52,7 @@ namespace SchmooTech.XWOptUnity
         }
 
         internal PartDescriptor<Vector3> descriptor;
+        internal RotationInfo<Vector3> rotationInfo;
         internal MeshVertices<Vector3> verts;
         internal VertexUV<Vector2> vertUV;
         internal VertexNormals<Vector3> vertNormals;
@@ -68,6 +69,7 @@ namespace SchmooTech.XWOptUnity
 
             // Fetch ship part top level data
             descriptor = ShipPart.Children.OfType<PartDescriptor<Vector3>>().First();
+            rotationInfo = ShipPart.Children.OfType<RotationInfo<Vector3>>().First();
             verts = ShipPart.OfType<MeshVertices<Vector3>>().First();
             vertUV = ShipPart.OfType<VertexUV<Vector2>>().First();
             vertNormals = ShipPart.OfType<VertexNormals<Vector3>>().First();
@@ -100,7 +102,7 @@ namespace SchmooTech.XWOptUnity
             }
         }
 
-        internal GameObject CreatePart(int skin)
+        internal GameObject CreatePart(GameObject parent, int skin)
         {
             var partObj = Object.Instantiate(Craft.PartBase) as GameObject;
 
@@ -134,7 +136,9 @@ namespace SchmooTech.XWOptUnity
                 Helpers.AttachTransform(partObj, targetPoint.CreateTargetPoint(), descriptor.HitboxCenterPoint);
             }
 
-            Craft.ProcessPart?.Invoke(partObj, descriptor);
+            Helpers.AttachTransform(parent, partObj);
+
+            Craft.ProcessPart?.Invoke(partObj, descriptor, rotationInfo);
 
             return partObj;
         }

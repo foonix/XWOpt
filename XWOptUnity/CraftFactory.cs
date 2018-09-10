@@ -34,7 +34,9 @@ namespace SchmooTech.XWOptUnity
     /// </summary>
     /// <param name="part">The part object that has been instantiated</param>
     /// <param name="descriptor">The XWOpt part descriptor associated with the part</param>
-    public delegate void ProcessPartHandler(GameObject part, PartDescriptor<Vector3> descriptor);
+    /// <param name="descriptor">The XWOpt rotation information associated with the part</param>
+    public delegate void ProcessPartHandler(GameObject part, PartDescriptor<Vector3> descriptor, RotationInfo<Vector3> rotationInfo);
+
     /// <summary>
     /// Callback for game specific setup of hardpoint objects after instantiation.
     /// Use this to modify or filter hardpoints, eg connect them to the game's firing system, etc.
@@ -267,7 +269,7 @@ namespace SchmooTech.XWOptUnity
 
             foreach (var partFactory in nonTargetGroupedParts)
             {
-                Helpers.AttachTransform(craft, partFactory.CreatePart(skin));
+                partFactory.CreatePart(craft, skin);
             }
 
             return craft;

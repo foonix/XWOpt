@@ -57,7 +57,7 @@ namespace SchmooTech.XWOptUnity
 
             foreach (var partFactory in parts)
             {
-                Helpers.AttachTransform(targetGroup, partFactory.CreatePart(skin));
+                partFactory.CreatePart(targetGroup, skin);
             }
 
             Craft.ProcessTargetGroup?.Invoke(targetGroup, Id, Type, Location);
