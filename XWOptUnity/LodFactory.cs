@@ -256,7 +256,13 @@ namespace SchmooTech.XWOptUnity
             Material[] mats = new Material[matsUsed.Count];
             for (int i = 0; i < matsUsed.Count; i++)
             {
-                mats[i] = Part.Craft.materials[matsUsed[i]];
+                Material mat = null;
+                Part.Craft.materials.TryGetValue(matsUsed[i], out mat);
+                if(null == mat)
+                {
+                    Debug.Log("Mesh references nonexistant material " + matsUsed[i]);
+                }
+                mats[i] = mat;
             }
             lodObj.GetComponent<MeshRenderer>().materials = mats;
 
