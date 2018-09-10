@@ -36,7 +36,7 @@ namespace SchmooTech.XWOpt.OptNode
 
         // 16 pallets at decreasing light levels.
         // colors packed 5-6-5 blue, green, red.
-        private TexturePallet pallet = new TexturePallet();
+        private readonly TexturePallet pallet = new TexturePallet();
         private int width;
         private int height;
 

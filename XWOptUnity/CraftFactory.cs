@@ -21,6 +21,7 @@
 
 using SchmooTech.XWOpt;
 using SchmooTech.XWOpt.OptNode;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -260,7 +261,7 @@ namespace SchmooTech.XWOptUnity
         /// </param>
         public GameObject CreateCraftObject(int skin)
         {
-            var craft = Object.Instantiate(CraftBase);
+            var craft = UnityEngine.Object.Instantiate(CraftBase);
 
             foreach (var targetGroup in targetGroups)
             {
@@ -275,9 +276,9 @@ namespace SchmooTech.XWOptUnity
             return craft;
         }
 
-        Texture2D MakeUnityTexture(XWOpt.OptNode.Texture textureNode, bool emissive = false)
+        int VersionSpecificPaletteNumber(bool emissive)
         {
-            int pallet;
+            int palette;
 
             // Generally higher pallet numbers are brighter.
             // Pick a brightness suitable for unity lighting
@@ -287,68 +288,86 @@ namespace SchmooTech.XWOptUnity
                     // TIE98/Xwing98/XvT pallet 0-7 are 0xCDCD paddding. Pallet 8 is very dark, pallet 15 is normal level.
                     if (emissive)
                     {
-                        pallet = 8;
+                        palette = 8;
                     }
                     else
                     {
-                        pallet = 15;
+                        palette = 15;
                     }
                     break;
                 default:
                     // XWA pallet 8 is medium brigtness.  Pallet 15 is oversaturated.
                     if (emissive)
                     {
-                        pallet = 0;
+                        palette = 0;
                     }
                     else
                     {
-                        pallet = 8;
+                        palette = 8;
                     }
                     break;
             }
 
-            Texture2D texture = new Texture2D(textureNode.Width, textureNode.Height, TextureFormat.RGB565, false);
-
-            texture.LoadRawTextureData(textureNode.ToRgb565(pallet));
-            texture.Apply();
-
-            return texture;
+            return palette;
         }
 
         Material MakeUnityMaterial(XWOpt.OptNode.Texture textureNode)
         {
-            var mainTexture = MakeUnityTexture(textureNode);
-
             var material = new Material(PartShader)
             {
                 name = textureNode.Name,
             };
 
+            var rawAlbedo = textureNode.ToRgb565(VersionSpecificPaletteNumber(false));
+
             if (MakeEmissiveTexture)
             {
                 // The lowest lighted pallet will have bright areas representing self-lighting.
                 // So use a texture generated from that pallet as an emissive texture.
-                var emissiveTexture = MakeUnityTexture(textureNode, true);
+                var rawEmissive = textureNode.ToRgb565(VersionSpecificPaletteNumber(true));
 
-                var mainPixels = mainTexture.GetPixels();
-                var emissivePixels = emissiveTexture.GetPixels();
-
-                for (int i = 0; i < mainPixels.Length; i++)
+                for (int i = 0; i < rawAlbedo.Length; i += 2)
                 {
+                    // Unpack RGB565, low order byte first.
+                    Color albedo = new Color(
+                        (rawAlbedo[i + 1] >> 3) / 31f,
+                        (((rawAlbedo[i + 1] & 7) << 3) | (rawAlbedo[i] >> 5)) / 63f,
+                        (rawAlbedo[i] & 0x1F) / 31f
+                        );
+
+                    Color emissive = new Color(
+                        (rawEmissive[i + 1] >> 3) / 31f,
+                        (((rawEmissive[i + 1] & 7) << 3) | (rawEmissive[i] >> 5)) / 63f,
+                        (rawEmissive[i] & 0x1F) / 31f
+                        );
+
                     // Lowest brightness pallet has too much ambient light to make a good emissive texture.
                     // So we try to squash the ambient part without reducing brightness of the emissive features too much.
-                    emissivePixels[i].r = Mathf.Pow(emissivePixels[i].r, EmissiveExponent);
-                    emissivePixels[i].g = Mathf.Pow(emissivePixels[i].g, EmissiveExponent);
-                    emissivePixels[i].b = Mathf.Pow(emissivePixels[i].b, EmissiveExponent);
+                    emissive.r = Mathf.Pow(emissive.r, EmissiveExponent);
+                    emissive.g = Mathf.Pow(emissive.g, EmissiveExponent);
+                    emissive.b = Mathf.Pow(emissive.b, EmissiveExponent);
 
                     // The material will be oversaturated if the emissive layer is simply layerd over the main texture.
-                    // So reduce the albido by the emissive part.
-                    mainPixels[i] = mainPixels[i] - emissivePixels[i];
+                    // So reduce the albedo by the emissive part.
+                    albedo -= emissive;
+
+                    // Repack RGB565
+                    byte a_r = (byte)(albedo.r * 31f);
+                    byte a_g = (byte)(albedo.g * 63f);
+                    byte a_b = (byte)(albedo.b * 31f);
+                    rawAlbedo[i + 1] = (byte)((a_r << 3) | (a_g >> 3));
+                    rawAlbedo[i] = (byte)(((a_g & 0x1F) << 5) | a_b);
+
+                    byte e_r = (byte)(emissive.r * 31f);
+                    byte e_g = (byte)(emissive.g * 63f);
+                    byte e_b = (byte)(emissive.b * 31f);
+                    rawEmissive[i + 1] = (byte)((e_r << 3) | (e_g >> 3));
+                    rawEmissive[i] = (byte)(((e_g & 0x1F) << 5) | e_b);
                 }
 
-                mainTexture.SetPixels(mainPixels);
-                mainTexture.Apply();
-                emissiveTexture.SetPixels(emissivePixels);
+                Texture2D emissiveTexture = new Texture2D(textureNode.Width, textureNode.Height, TextureFormat.RGB565, false);
+
+                emissiveTexture.LoadRawTextureData(rawEmissive);
                 emissiveTexture.Apply();
 
                 // Enable emission in the standard shader.
@@ -358,7 +377,12 @@ namespace SchmooTech.XWOptUnity
                 material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
             }
 
-            material.mainTexture = mainTexture;
+            Texture2D albedoTexture = new Texture2D(textureNode.Width, textureNode.Height, TextureFormat.RGB565, false);
+
+            albedoTexture.LoadRawTextureData(rawAlbedo);
+            albedoTexture.Apply();
+
+            material.mainTexture = albedoTexture;
 
             material.SetFloat("_Glossiness", 0.1f);
 
