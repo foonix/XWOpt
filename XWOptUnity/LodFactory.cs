@@ -29,10 +29,10 @@ namespace SchmooTech.XWOptUnity
 {
     class LodFactory
     {
-        Mesh _mesh;
+        readonly Mesh _mesh;
         NodeCollection _lodNode;
-        int _index;
-        float _threshold;
+        readonly int _index;
+        readonly float _threshold;
         PartFactory Part { get; set; }
 
         /// <summary>
@@ -256,9 +256,8 @@ namespace SchmooTech.XWOptUnity
             Material[] mats = new Material[matsUsed.Count];
             for (int i = 0; i < matsUsed.Count; i++)
             {
-                Material mat = null;
-                Part.Craft.materials.TryGetValue(matsUsed[i], out mat);
-                if(null == mat)
+                Part.Craft.materials.TryGetValue(matsUsed[i], out Material mat);
+                if (null == mat)
                 {
                     Debug.Log("Mesh references nonexistant material " + matsUsed[i]);
                 }
