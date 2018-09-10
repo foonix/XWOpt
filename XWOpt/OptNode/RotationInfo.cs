@@ -32,9 +32,21 @@ namespace SchmooTech.XWOpt.OptNode
         private TVector3 rollAxis;
         private TVector3 pitchAxis;
 
+        /// <summary>
+        /// For a pivoting structure, this is the point it pivots around.
+        /// </summary>
         public TVector3 Offset { get => offset; set => offset = value; }
+        /// <summary>
+        /// The vector the object yaws clockwise around IE downward facing vector
+        /// </summary>
         public TVector3 YawAxis { get => yawAxis; set => yawAxis = value; }
+        /// <summary>
+        /// The vector the object rolls around (clockwise = roll right) IE forward facting vector
+        /// </summary>
         public TVector3 RollAxis { get => rollAxis; set => rollAxis = value; }
+        /// <summary>
+        /// The vector the object pitches around (clockwise = pitch up)
+        /// </summary>
         public TVector3 PitchAxis { get => pitchAxis; set => pitchAxis = value; }
 
         internal RotationInfo(OptReader reader) : base(reader)
