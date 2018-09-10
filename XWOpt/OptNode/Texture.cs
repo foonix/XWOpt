@@ -117,7 +117,10 @@ namespace SchmooTech.XWOpt.OptNode
 
             for (int i = 0; i < texturePalletRefs.Length; i++)
             {
-                Array.Copy(BitConverter.GetBytes(pallet[palletNumber, texturePalletRefs[i]]), 0, img, i * 2, 2);
+                ushort color = pallet[palletNumber, texturePalletRefs[i]];
+
+                img[i * 2] = (byte)(color & 0xFF);  // low order byte
+                img[(i * 2) + 1] = (byte)(color >> 8);  // high order byte
             }
 
             return img;
