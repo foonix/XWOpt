@@ -19,6 +19,7 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+using SchmooTech.XWOpt;
 using SchmooTech.XWOpt.OptNode;
 using System;
 using System.Collections.Generic;
@@ -110,6 +111,18 @@ namespace SchmooTech.XWOptUnity
                 {
                     var newVertRefs = new int[4];
 
+                    // Some normals in xwing98 tug, xwing98 bwing, xwa shuttle and possibly others, are garbage data.
+                    // Other normals in the vicinity might also garbage, so flate shade the entire face.
+                    bool rejectNormal = false;
+                    for (int j = 0; j < 4; j++)
+                    {
+                        var id = faceList.VertexNormalRef[i][j];
+                        if (id >= 0 && vertNormals.Normals[id] == Vector3.zero)
+                        {
+                            rejectNormal = true;
+                        }
+                    }
+
                     // check each point for need to generate new vertex
                     for (int j = 0; j < 4; j++)
                     {
@@ -125,7 +138,19 @@ namespace SchmooTech.XWOptUnity
                             continue;
                         }
 
-                        if (usedVertLookup.ContainsKey(vt))
+                        // Some normals in xwing98 tug, xwing98 bwing, xwa shuttle and possibly others, are garbage data.
+                        // Zero normals can cause unity lighting problems.  Fallback on face normal.
+                        Vector3 normal;
+                        if (rejectNormal)
+                        {
+                            normal = GetFaceNormal(faceList.VertexRef[i], verts);
+                        }
+                        else
+                        {
+                            normal = vertNormals.Normals[vt.normId];
+                        }
+
+                        if (usedVertLookup.ContainsKey(vt) && !rejectNormal)
                         {
                             // reuse the vertex
                             newVertRefs[j] = usedVertLookup[vt];
@@ -147,7 +172,7 @@ namespace SchmooTech.XWOptUnity
                             }
                             meshVerts.Add(verts.Vertices[vt.vId]);
                             meshUV.Add(vertUV.Vertices[vt.uvId]);
-                            meshNorms.Add(vertNormals.Normals[vt.normId]);
+                            meshNorms.Add(normal.normalized);
 
                             // Index it so we can find it later.
                             usedVertLookup[vt] = meshVerts.Count - 1;
@@ -184,6 +209,25 @@ namespace SchmooTech.XWOptUnity
             }
 
             return mesh;
+        }
+
+        /// <summary>
+        /// Calculate the flat surface normal for a given quad.
+        /// </summary>
+        /// <param name="coordinateReferenceTuple"></param>
+        /// <param name="verts"></param>
+        /// <returns></returns>
+        private static Vector3 GetFaceNormal(CoordinateReferenceTuple coordinateReferenceTuple, MeshVertices<Vector3> verts)
+        {
+            // I'm not aware of any models that have non-planar quads, so just steal unity example code :)
+            Vector3 a = verts.Vertices[coordinateReferenceTuple[1]];
+            Vector3 b = verts.Vertices[coordinateReferenceTuple[0]];
+            Vector3 c = verts.Vertices[coordinateReferenceTuple[2]];
+
+            var side1 = b - a;
+            var side2 = c - a;
+
+            return Vector3.Cross(side1, side2).normalized;
         }
 
         internal LOD MakeLOD(GameObject parent, int skin)

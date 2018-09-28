@@ -45,6 +45,7 @@
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="OptFile.cs" />
     <Compile Include="OptNode\BaseNode.cs" />
+    <Compile Include="OptNode\NamedGroup.cs" />
     <Compile Include="OptNode\NodeCollection.cs" />
     <Compile Include="OptNode\EngineGlow.cs" />
     <Compile Include="OptNode\FaceList.cs" />
