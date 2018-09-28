@@ -284,6 +284,7 @@ namespace SchmooTech.XWOptUnity
             // Pick a brightness suitable for unity lighting
             switch (Opt.Version)
             {
+                case (1):
                 case (2):
                     // TIE98/Xwing98/XvT pallet 0-7 are 0xCDCD paddding. Pallet 8 is very dark, pallet 15 is normal level.
                     if (emissive)
