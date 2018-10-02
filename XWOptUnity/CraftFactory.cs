@@ -21,7 +21,6 @@
 
 using SchmooTech.XWOpt;
 using SchmooTech.XWOpt.OptNode;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -107,7 +106,19 @@ namespace SchmooTech.XWOptUnity
         /// <summary>
         /// The shader to use on the materials.  Default is Unity "Standard" shader.
         /// </summary>
-        public Shader PartShader { get; set; } = Shader.Find("Standard");
+        public Shader PartShader
+        {
+            get
+            {
+                return partShader ?? (partShader = Shader.Find("Standard"));
+            }
+            set
+            {
+                partShader = value;
+                NeedsBake = true;
+            }
+        }
+        private Shader partShader;
 
         /// <summary>
         /// Distance between opposite corners of the box encompasing the craft.  Used for LOD cutover.
@@ -119,21 +130,52 @@ namespace SchmooTech.XWOptUnity
         /// This allows things like engines and windows to "glow in the dark."
         /// Note this will cause the lowest possible darkness to be clamped at the original game's lowest level.
         /// </summary>
-        public bool MakeEmissiveTexture { get; set; } = true;
+        public bool MakeEmissiveTexture
+        {
+            get
+            {
+                return makeEmissiveTexture;
+            }
+            set
+            {
+                makeEmissiveTexture = value;
+                NeedsBake = true;
+            }
+        }
+        private bool makeEmissiveTexture = true;
+
 
         /// <summary>
         /// Exponent for darkening emissive textures.
         /// Set high enough to make the dark parts nearly black while leaving emissive parts bright.
         /// </summary>
-        public float EmissiveExponent { get; set; } = 2f;
+        public float EmissiveExponent
+        {
+            get
+            {
+                return emissiveExponent;
+            }
+            set
+            {
+                emissiveExponent = value;
+                NeedsBake = true;
+            }
+        }
+        private float emissiveExponent = 2f;
 
         public OptFile<Vector2, Vector3> Opt { get; private set; } = new OptFile<Vector2, Vector3>
         {
-            Logger = msg => Debug.Log(msg),
+            //Logger = msg => Debug.Log(msg),
             RotateFromOptSpace = new CoordinateSystemConverter<Vector3>(RotateIntoUnitySpace)
         };
 
-        internal Dictionary<string, Material> materials;
+        /// <summary>
+        /// True if the baking process has not completed or any setting has been changed that would affect the baking process.
+        /// </summary>
+        public bool NeedsBake { get; private set; } = true;
+
+        internal Dictionary<string, TextureCacheEntry> unpackedTextures = new Dictionary<string, TextureCacheEntry>();
+        internal Dictionary<string, Material> materials = new Dictionary<string, Material>();
         List<PartFactory> nonTargetGroupedParts = new List<PartFactory>();
         Dictionary<DistinctTargetGroupTuple, TargetGroupFactory> targetGroups = new Dictionary<DistinctTargetGroupTuple, TargetGroupFactory>();
 
@@ -170,15 +212,6 @@ namespace SchmooTech.XWOptUnity
 
         private void CraftFactoryImpl()
         {
-            // Some models seem to share textures between parts by placing them at the top level.
-            // So we need to gather all of the textures in the model
-            // Making the assumption here that texture names are unique.
-            materials = new Dictionary<string, Material>();
-            foreach (var textureNode in Opt.OfType<XWOpt.OptNode.Texture>())
-            {
-                materials.Add(textureNode.Name, MakeUnityMaterial(textureNode));
-            }
-
             // Determine total size of the craft.  Used for LOD size.
             bool foundDescriptor = false;
             Vector3 upperBound = new Vector3(); // upper bound
@@ -239,6 +272,27 @@ namespace SchmooTech.XWOptUnity
             }
         }
 
+        /// <summary>
+        /// Perform as much computationally expensive conversion work as pracitcal.
+        /// 
+        /// This does not use the Unity API and is safe to call outside of the unity main thread.
+        /// </summary>
+        public void Bake()
+        {
+            materials.Clear();
+            unpackedTextures.Clear();
+
+            foreach (var textureNode in Opt.OfType<XWOpt.OptNode.Texture>())
+            {
+                unpackedTextures.Add(
+                    textureNode.Name,
+                    new TextureCacheEntry(textureNode, Opt.Version, makeEmissiveTexture ? emissiveExponent : (float?)null)
+                );
+            }
+
+            NeedsBake = false;
+        }
+
         static Vector3 RotateIntoUnitySpace(Vector3 v)
         {
             return CoordinateConverter * v;
@@ -254,6 +308,8 @@ namespace SchmooTech.XWOptUnity
 
         /// <summary>
         /// Generates craft object based OPT model.
+        /// 
+        /// If NeedsBake is true, this will trigger bake().
         /// </summary>
         /// <param name="skin">
         /// Which skin to use.  This is usually based on which squadron, EG Red, Blue, Gold, Alpha, Beta, etc.
@@ -261,7 +317,22 @@ namespace SchmooTech.XWOptUnity
         /// </param>
         public GameObject CreateCraftObject(int skin)
         {
-            var craft = UnityEngine.Object.Instantiate(CraftBase);
+            if (NeedsBake)
+            {
+                Bake();
+            }
+
+            // Some models seem to share textures between parts by placing them at the top level.
+            // So we need to gather all of the textures in the model
+            // Making the assumption here that texture names are unique.
+            materials = new Dictionary<string, Material>();
+            foreach (var textureCacheEntry in unpackedTextures)
+            {
+                if (!materials.ContainsKey(textureCacheEntry.Key))
+                    materials.Add(textureCacheEntry.Key, textureCacheEntry.Value.MakeMaterial(PartShader));
+            }
+
+            var craft = Object.Instantiate(CraftBase);
 
             foreach (var targetGroup in targetGroups)
             {
@@ -274,120 +345,6 @@ namespace SchmooTech.XWOptUnity
             }
 
             return craft;
-        }
-
-        int VersionSpecificPaletteNumber(bool emissive)
-        {
-            int palette;
-
-            // Generally higher pallet numbers are brighter.
-            // Pick a brightness suitable for unity lighting
-            switch (Opt.Version)
-            {
-                case (1):
-                case (2):
-                    // TIE98/Xwing98/XvT pallet 0-7 are 0xCDCD paddding. Pallet 8 is very dark, pallet 15 is normal level.
-                    if (emissive)
-                    {
-                        palette = 8;
-                    }
-                    else
-                    {
-                        palette = 15;
-                    }
-                    break;
-                default:
-                    // XWA pallet 8 is medium brigtness.  Pallet 15 is oversaturated.
-                    if (emissive)
-                    {
-                        palette = 0;
-                    }
-                    else
-                    {
-                        palette = 8;
-                    }
-                    break;
-            }
-
-            return palette;
-        }
-
-        Material MakeUnityMaterial(XWOpt.OptNode.Texture textureNode)
-        {
-            var material = new Material(PartShader)
-            {
-                name = textureNode.Name,
-            };
-
-            var rawAlbedo = textureNode.ToRgb565(VersionSpecificPaletteNumber(false));
-
-            if (MakeEmissiveTexture)
-            {
-                // The lowest lighted pallet will have bright areas representing self-lighting.
-                // So use a texture generated from that pallet as an emissive texture.
-                var rawEmissive = textureNode.ToRgb565(VersionSpecificPaletteNumber(true));
-
-                for (int i = 0; i < rawAlbedo.Length; i += 2)
-                {
-                    // Unpack RGB565, low order byte first.
-                    Color albedo = new Color(
-                        (rawAlbedo[i + 1] >> 3) / 31f,
-                        (((rawAlbedo[i + 1] & 7) << 3) | (rawAlbedo[i] >> 5)) / 63f,
-                        (rawAlbedo[i] & 0x1F) / 31f
-                        );
-
-                    Color emissive = new Color(
-                        (rawEmissive[i + 1] >> 3) / 31f,
-                        (((rawEmissive[i + 1] & 7) << 3) | (rawEmissive[i] >> 5)) / 63f,
-                        (rawEmissive[i] & 0x1F) / 31f
-                        );
-
-                    // Lowest brightness pallet has too much ambient light to make a good emissive texture.
-                    // So we try to squash the ambient part without reducing brightness of the emissive features too much.
-                    emissive.r = Mathf.Pow(emissive.r, EmissiveExponent);
-                    emissive.g = Mathf.Pow(emissive.g, EmissiveExponent);
-                    emissive.b = Mathf.Pow(emissive.b, EmissiveExponent);
-
-                    // The material will be oversaturated if the emissive layer is simply layerd over the main texture.
-                    // So reduce the albedo by the emissive part.
-                    albedo -= emissive;
-
-                    // Repack RGB565
-                    byte a_r = (byte)(albedo.r * 31f);
-                    byte a_g = (byte)(albedo.g * 63f);
-                    byte a_b = (byte)(albedo.b * 31f);
-                    rawAlbedo[i + 1] = (byte)((a_r << 3) | (a_g >> 3));
-                    rawAlbedo[i] = (byte)(((a_g & 0x1F) << 5) | a_b);
-
-                    byte e_r = (byte)(emissive.r * 31f);
-                    byte e_g = (byte)(emissive.g * 63f);
-                    byte e_b = (byte)(emissive.b * 31f);
-                    rawEmissive[i + 1] = (byte)((e_r << 3) | (e_g >> 3));
-                    rawEmissive[i] = (byte)(((e_g & 0x1F) << 5) | e_b);
-                }
-
-                Texture2D emissiveTexture = new Texture2D(textureNode.Width, textureNode.Height, TextureFormat.RGB565, false);
-
-                emissiveTexture.LoadRawTextureData(rawEmissive);
-                emissiveTexture.Apply();
-
-                // Enable emission in the standard shader.
-                material.EnableKeyword("_EMISSION");
-                material.SetTexture("_EmissionMap", emissiveTexture);
-                material.SetColor("_EmissionColor", Color.white);
-                material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
-            }
-
-            Texture2D albedoTexture = new Texture2D(textureNode.Width, textureNode.Height, TextureFormat.RGB565, false);
-
-            albedoTexture.LoadRawTextureData(rawAlbedo);
-            albedoTexture.Apply();
-
-            material.mainTexture = albedoTexture;
-
-            material.SetFloat("_Glossiness", 0.1f);
-
-            return material;
         }
     }
 }
