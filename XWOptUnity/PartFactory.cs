@@ -20,6 +20,7 @@
  */
 
 using SchmooTech.XWOpt.OptNode;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -104,7 +105,7 @@ namespace SchmooTech.XWOptUnity
 
         internal GameObject CreatePart(GameObject parent, int skin)
         {
-            var partObj = Object.Instantiate(Craft.PartBase) as GameObject;
+            var partObj = UnityEngine.Object.Instantiate(Craft.PartBase) as GameObject;
 
             if (null != descriptor)
             {
@@ -141,6 +142,22 @@ namespace SchmooTech.XWOptUnity
             Craft.ProcessPart?.Invoke(partObj, descriptor, rotationInfo);
 
             return partObj;
+        }
+
+        internal void ParallelizableBake()
+        {
+            foreach (var lod in _lods)
+            {
+                lod.ParallelizableBake();
+            }
+        }
+
+        internal void MainThreadBake()
+        {
+            foreach(var lod in _lods)
+            {
+                lod.MainThreadBake();
+            }
         }
     }
 }

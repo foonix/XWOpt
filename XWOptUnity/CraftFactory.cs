@@ -115,7 +115,7 @@ namespace SchmooTech.XWOptUnity
             set
             {
                 partShader = value;
-                NeedsBake = true;
+                NeedsMainThreadBake = NeedsParallelizableBake = true;
             }
         }
         private Shader partShader;
@@ -139,7 +139,7 @@ namespace SchmooTech.XWOptUnity
             set
             {
                 makeEmissiveTexture = value;
-                NeedsBake = true;
+                NeedsMainThreadBake = NeedsParallelizableBake = true;
             }
         }
         private bool makeEmissiveTexture = true;
@@ -158,7 +158,7 @@ namespace SchmooTech.XWOptUnity
             set
             {
                 emissiveExponent = value;
-                NeedsBake = true;
+                NeedsMainThreadBake = NeedsParallelizableBake = true;
             }
         }
         private float emissiveExponent = 2f;
@@ -172,7 +172,12 @@ namespace SchmooTech.XWOptUnity
         /// <summary>
         /// True if the baking process has not completed or any setting has been changed that would affect the baking process.
         /// </summary>
-        public bool NeedsBake { get; private set; } = true;
+        public bool NeedsParallelizableBake { get; private set; } = true;
+
+        /// <summary>
+        /// True if the baking process has not completed or any setting has been changed that would affect the baking process.
+        /// </summary>
+        public bool NeedsMainThreadBake { get; private set; } = true;
 
         internal Dictionary<string, TextureCacheEntry> unpackedTextures = new Dictionary<string, TextureCacheEntry>();
         internal Dictionary<string, Material> materials = new Dictionary<string, Material>();
@@ -274,23 +279,69 @@ namespace SchmooTech.XWOptUnity
 
         /// <summary>
         /// Perform as much computationally expensive conversion work as pracitcal.
-        /// 
-        /// This does not use the Unity API and is safe to call outside of the unity main thread.
+        ///
+        /// If internalParallel is false, this does not use the Unity API and is safe to call outside of the unity main thread.
+        /// (It is not thread safe to operate on CraftFactory while this is running.)
         /// </summary>
-        public void Bake()
+        /// <param name="internalParallel">Internally parallelize operations </param>
+        public void ParallelizableBake(int? degreesOfParallelism = null)
         {
-            materials.Clear();
-            unpackedTextures.Clear();
+            var textureIterator = Opt.OfType<XWOpt.OptNode.Texture>();
 
-            foreach (var textureNode in Opt.OfType<XWOpt.OptNode.Texture>())
+            if (degreesOfParallelism.HasValue)
             {
-                unpackedTextures.Add(
-                    textureNode.Name,
-                    new TextureCacheEntry(textureNode, Opt.Version, makeEmissiveTexture ? emissiveExponent : (float?)null)
-                );
+                unpackedTextures = textureIterator.AsParallel().WithDegreeOfParallelism(degreesOfParallelism.Value)
+                    .Select(t => new TextureCacheEntry(t, Opt.Version, makeEmissiveTexture ? emissiveExponent : (float?)null))
+                    .ToDictionary(t => t.Name, t => t);
+
+                nonTargetGroupedParts.AsParallel().WithDegreeOfParallelism(degreesOfParallelism.Value).ForAll(p => p.ParallelizableBake());
+            }
+            else
+            {
+                unpackedTextures = textureIterator
+                    .Select(t => new TextureCacheEntry(t, Opt.Version, makeEmissiveTexture ? emissiveExponent : (float?)null))
+                    .ToDictionary(t => t.Name, t => t);
+
+                nonTargetGroupedParts.ForEach(p => p.ParallelizableBake());
             }
 
-            NeedsBake = false;
+            // TODO: bake calls for target groups
+
+            NeedsParallelizableBake = false;
+            NeedsMainThreadBake = true;
+        }
+
+        /// <summary>
+        /// Perform as much computationally expensive conversion work as pracitcal.
+        /// This frees any temporary memory used by ParallelizableBake().
+        ///
+        /// This MUST be called from the Unity main thread.
+        /// </summary>
+        public void MainThreadBake()
+        {
+            if (NeedsParallelizableBake)
+            {
+                ParallelizableBake(SystemInfo.processorCount);
+            }
+
+            // Some models seem to share textures between parts by placing them at the top level.
+            // So we need to gather all of the textures in the model
+            // Making the assumption here that texture names are unique.
+            materials.Clear();
+            foreach (var texture in unpackedTextures)
+            {
+                materials.Add(texture.Key, texture.Value.MakeMaterial(PartShader));
+            }
+            unpackedTextures.Clear();
+
+            foreach (var part in nonTargetGroupedParts)
+            {
+                part.MainThreadBake();
+            }
+
+            // TODO: bake calls for target groups
+
+            NeedsMainThreadBake = false;
         }
 
         static Vector3 RotateIntoUnitySpace(Vector3 v)
@@ -300,6 +351,8 @@ namespace SchmooTech.XWOptUnity
 
         /// <summary>
         /// Generates craft object based OPT model. This overload uses the default skin (0).
+        ///
+        /// This will trigger bake operations if any options have been modified that would affect the baking process.
         /// </summary>
         public GameObject CreateCraftObject()
         {
@@ -308,8 +361,8 @@ namespace SchmooTech.XWOptUnity
 
         /// <summary>
         /// Generates craft object based OPT model.
-        /// 
-        /// If NeedsBake is true, this will trigger bake().
+        ///
+        /// This will trigger bake operations if any options have been modified that would affect the baking process.
         /// </summary>
         /// <param name="skin">
         /// Which skin to use.  This is usually based on which squadron, EG Red, Blue, Gold, Alpha, Beta, etc.
@@ -317,19 +370,9 @@ namespace SchmooTech.XWOptUnity
         /// </param>
         public GameObject CreateCraftObject(int skin)
         {
-            if (NeedsBake)
+            if (NeedsMainThreadBake)
             {
-                Bake();
-            }
-
-            // Some models seem to share textures between parts by placing them at the top level.
-            // So we need to gather all of the textures in the model
-            // Making the assumption here that texture names are unique.
-            materials = new Dictionary<string, Material>();
-            foreach (var textureCacheEntry in unpackedTextures)
-            {
-                if (!materials.ContainsKey(textureCacheEntry.Key))
-                    materials.Add(textureCacheEntry.Key, textureCacheEntry.Value.MakeMaterial(PartShader));
+                MainThreadBake();
             }
 
             var craft = Object.Instantiate(CraftBase);

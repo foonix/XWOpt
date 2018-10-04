@@ -28,6 +28,7 @@ namespace SchmooTech.XWOptUnity
     /// </summary>
     internal class TextureCacheEntry
     {
+        internal string Name { get; private set; }
         private TextureFormat AlbidoFormat { get; set; } = TextureFormat.RGB565;
         private TextureFormat EmissiveFormat { get; set; } = TextureFormat.RGB565;
 
@@ -47,6 +48,7 @@ namespace SchmooTech.XWOptUnity
         {
             this.textureNode = textureNode;
             this.optVersion = optVersion;
+            Name = textureNode.Name;
 
             rawAlbedo = textureNode.ToRgb565(VersionSpecificPaletteNumber(false));
 

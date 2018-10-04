@@ -30,8 +30,12 @@ namespace SchmooTech.XWOptUnity
 {
     class LodFactory
     {
-        readonly Mesh _mesh;
+        Mesh mesh;
         NodeCollection _lodNode;
+        private List<List<int>> submeshList;
+        private List<Vector3> meshVerts;
+        private List<Vector2> meshUV;
+        private List<Vector3> meshNorms;
         readonly int _index;
         readonly float _threshold;
         PartFactory Part { get; set; }
@@ -63,11 +67,9 @@ namespace SchmooTech.XWOptUnity
             {
                 _threshold = 0;
             }
-
-            _mesh = GatherSubmeshes();
         }
 
-        Mesh GatherSubmeshes()
+        void GatherSubmeshes()
         {
             List<FaceList<Vector3>> faceLists = new List<FaceList<Vector3>>();
 
@@ -82,19 +84,17 @@ namespace SchmooTech.XWOptUnity
                 }
             }
 
-            return MakeMesh(faceLists, Part.verts, Part.vertNormals, Part.vertUV);
+            MakeMesh(faceLists, Part.verts, Part.vertNormals, Part.vertUV);
         }
 
-        static Mesh MakeMesh(List<FaceList<Vector3>> faceLists, MeshVertices<Vector3> verts, VertexNormals<Vector3> vertNormals, VertexUV<Vector2> vertUV)
+        void MakeMesh(List<FaceList<Vector3>> faceLists, MeshVertices<Vector3> verts, VertexNormals<Vector3> vertNormals, VertexUV<Vector2> vertUV)
         {
-            var mesh = new Mesh();
-
-            var submeshList = new List<List<int>>();
+            submeshList = new List<List<int>>();
 
             // Must remain the same length.
-            var meshVerts = new List<Vector3>();
-            var meshUV = new List<Vector2>();
-            var meshNorms = new List<Vector3>();
+            meshVerts = new List<Vector3>();
+            meshUV = new List<Vector2>();
+            meshNorms = new List<Vector3>();
 
             // Unity can only have one normal and UV per vertex.
             // All sub-meshes (triangle lists) in the same mesh have to share the same vertex list.
@@ -117,7 +117,7 @@ namespace SchmooTech.XWOptUnity
                     for (int j = 0; j < 4; j++)
                     {
                         var id = faceList.VertexNormalRef[i][j];
-                        if (id >= 0 && vertNormals.Normals[id] == Vector3.zero)
+                        if (id < 0 || id >= vertNormals.Normals.Count || vertNormals.Normals[id] == Vector3.zero)
                         {
                             rejectNormal = true;
                         }
@@ -197,6 +197,17 @@ namespace SchmooTech.XWOptUnity
                 }
                 submeshList.Add(triangles);
             }
+        }
+
+        internal void ParallelizableBake()
+        {
+            GatherSubmeshes();
+        }
+
+        internal void MainThreadBake()
+        {
+            mesh = new Mesh();
+            mesh.name = Part.descriptor.PartType.ToString() + "_LOD" + _index;
 
             mesh.SetVertices(meshVerts);
             mesh.SetUVs(0, meshUV);
@@ -207,8 +218,6 @@ namespace SchmooTech.XWOptUnity
             {
                 mesh.SetTriangles(submeshList[i], i);
             }
-
-            return mesh;
         }
 
         /// <summary>
@@ -309,7 +318,7 @@ namespace SchmooTech.XWOptUnity
             }
             lodObj.GetComponent<MeshRenderer>().materials = mats;
 
-            lodObj.GetComponent<MeshFilter>().mesh = _mesh;
+            lodObj.GetComponent<MeshFilter>().mesh = mesh;
 
             return new LOD(_threshold, new Renderer[] { lodObj.GetComponent<MeshRenderer>() });
         }
