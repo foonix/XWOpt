@@ -112,7 +112,6 @@ namespace SchmooTech.XWOpt
 
             if (nodeCache.ContainsKey(offset))
             {
-                logger?.Invoke("Recycling node at " + offset + " of type " + nodeCache[offset].ToString());
                 return nodeCache[offset];
             }
 
@@ -134,7 +133,7 @@ namespace SchmooTech.XWOpt
             else if (majorId > globalOffset && minorId == 0 && peek == 1)
             {
                 // This is a weird subtype found in SHUTTLE.OPT
-                return new NameNode(this, majorId);
+                return new NamedNodeCollection(this, majorId);
             }
             else
             {
@@ -234,12 +233,6 @@ namespace SchmooTech.XWOpt
         internal long FakeOffset(int offset)
         {
             return offset + globalOffset;
-        }
-
-        /// <summary>Follow a pointer read from the file.</summary>
-        internal void FollowPointer()
-        {
-            Seek(ReadInt32());
         }
 
         /// <summary>Follow offset address in file. Warn if seek does not lead to next byte after address's location.</summary>

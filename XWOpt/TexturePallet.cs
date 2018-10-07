@@ -36,7 +36,7 @@ namespace SchmooTech.XWOpt.OptNode
         const int ColorCount = 256;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
-        ushort[,] pallets = new ushort[PalletCount, ColorCount];
+        readonly ushort[,] pallets = new ushort[PalletCount, ColorCount];
 
         public TexturePallet() { }
 
@@ -77,7 +77,7 @@ namespace SchmooTech.XWOpt.OptNode
             return pallets[palletNumber, which];
         }
 
-        void BoundsCheck(int palletNumber, int which)
+        private static void BoundsCheck(int palletNumber, int which)
         {
             if (palletNumber < 0 || palletNumber >= PalletCount)
             {

@@ -260,7 +260,7 @@ namespace SchmooTech.XWOptUnity
             {
                 switch (child)
                 {
-                    case NameNode named:
+                    case NamedNodeCollection named:
                         SearchedNodes.AddRange((named.Children[0] as NodeCollection).Children);
                         break;
                     default:

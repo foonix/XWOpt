@@ -21,6 +21,7 @@
 
 using SchmooTech.XWOpt;
 using SchmooTech.XWOpt.OptNode;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -163,7 +164,7 @@ namespace SchmooTech.XWOptUnity
         }
         private float emissiveExponent = 2f;
 
-        public OptFile<Vector2, Vector3> Opt { get; private set; } = new OptFile<Vector2, Vector3>
+        public OptFile<Vector2, Vector3> Opt { get; } = new OptFile<Vector2, Vector3>
         {
             //Logger = msg => Debug.Log(msg),
             RotateFromOptSpace = new CoordinateSystemConverter<Vector3>(RotateIntoUnitySpace)
@@ -208,6 +209,11 @@ namespace SchmooTech.XWOptUnity
 
         public CraftFactory(Stream stream)
         {
+            if(stream is null)
+            {
+                throw new ArgumentNullException("stream");
+            }
+
             FileName = stream.ToString();
 
             Opt.Read(stream);
@@ -284,7 +290,7 @@ namespace SchmooTech.XWOptUnity
         /// (It is not thread safe to operate on CraftFactory while this is running.)
         /// </summary>
         /// <param name="internalParallel">Internally parallelize operations </param>
-        public void ParallelizableBake(int? degreesOfParallelism = null)
+        public void ParallelizableBake(int? degreesOfParallelism)
         {
             var textureIterator = Opt.OfType<XWOpt.OptNode.Texture>();
 
@@ -309,6 +315,11 @@ namespace SchmooTech.XWOptUnity
 
             NeedsParallelizableBake = false;
             NeedsMainThreadBake = true;
+        }
+
+        public void ParallelizableBake()
+        {
+            ParallelizableBake(null);
         }
 
         /// <summary>
@@ -375,7 +386,7 @@ namespace SchmooTech.XWOptUnity
                 MainThreadBake();
             }
 
-            var craft = Object.Instantiate(CraftBase);
+            var craft = UnityEngine.Object.Instantiate(CraftBase);
 
             foreach (var targetGroup in targetGroups)
             {

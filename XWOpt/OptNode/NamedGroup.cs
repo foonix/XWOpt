@@ -1,6 +1,6 @@
 ﻿namespace SchmooTech.XWOpt.OptNode
 {
-    public class NameNode : NodeCollection
+    public class NamedNodeCollection : NodeCollection
     {
         /*
          * Node with single child and long name.
@@ -19,7 +19,7 @@
 
         public string Name { get; set; }
 
-        internal NameNode(OptReader reader, int nameOffset) : base()
+        internal NamedNodeCollection(OptReader reader, int nameOffset) : base()
         {
             var child_pp = reader.ReadInt32();
 

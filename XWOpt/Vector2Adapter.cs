@@ -29,7 +29,7 @@ namespace SchmooTech.XWOpt
     {
         // TODO: Call constructor if ref type.
         ConstructorInfo vector3Cotr;
-        FieldInfo X, Y;
+        readonly FieldInfo X, Y;
 
         public Vector2Adapter()
         {

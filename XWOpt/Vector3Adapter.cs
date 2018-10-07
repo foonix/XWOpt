@@ -28,7 +28,7 @@ namespace SchmooTech.XWOpt
     internal class Vector3Adapter<TVector3> : VectorAdapter
     {
         ConstructorInfo vector3Cotr;
-        FieldInfo X, Y, Z;
+        readonly FieldInfo X, Y, Z;
         internal CoordinateSystemConverter<TVector3> RotateFromOptSpace { get; set; }
         internal CoordinateSystemConverter<TVector3> RotateToOptSpace { get; set; }
 

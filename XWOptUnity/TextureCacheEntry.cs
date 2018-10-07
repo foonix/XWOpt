@@ -29,8 +29,8 @@ namespace SchmooTech.XWOptUnity
     internal class TextureCacheEntry
     {
         internal string Name { get; private set; }
-        private TextureFormat AlbidoFormat { get; set; } = TextureFormat.RGB565;
-        private TextureFormat EmissiveFormat { get; set; } = TextureFormat.RGB565;
+        private TextureFormat AlbidoFormat { get; } = TextureFormat.RGB565;
+        private TextureFormat EmissiveFormat { get; } = TextureFormat.RGB565;
 
         private readonly byte[] rawAlbedo;
         private readonly byte[] rawEmissive;
