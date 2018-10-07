@@ -49,6 +49,9 @@ namespace SchmooTech.XWOpt
 
         internal Action<string> logger;
 
+        private Dictionary<int, BaseNode> nodeCache = new Dictionary<int, BaseNode>();
+        private Dictionary<int, TexturePallet> paletteCache = new Dictionary<int, TexturePallet>();
+
         /// <summary>
         /// Helper for reading Opt file strcutures.  Readers initial top level headers required for reading the rest of the file.
         /// </summary>
@@ -107,6 +110,12 @@ namespace SchmooTech.XWOpt
         {
             int preHeaderOffset = 0;
 
+            if (nodeCache.ContainsKey(offset))
+            {
+                logger?.Invoke("Recycling node at " + offset + " of type " + nodeCache[offset].ToString());
+                return nodeCache[offset];
+            }
+
             Seek(offset);
             int majorId = ReadInt32();
             int minorId = ReadInt32();
@@ -133,54 +142,78 @@ namespace SchmooTech.XWOpt
             }
 
             // Figure out the type of node and build appropriate object.
+            BaseNode node;
             switch (majorId)
             {
                 case (int)Major.Generic:
                     switch (minorId)
                     {
                         case (int)GenericMinor.Branch:
-                            return new NodeCollection(this) as BaseNode;
+                            node = new NodeCollection(this) as BaseNode;
+                            break;
                         case (int)GenericMinor.MeshVertex:
-                            return MakeGenericNode(typeof(MeshVertices<>), new Type[] { Vector3T });
+                            node = MakeGenericNode(typeof(MeshVertices<>), new Type[] { Vector3T });
+                            break;
                         case (int)GenericMinor.TextureVertex:
-                            return MakeGenericNode(typeof(VertexUV<>), new Type[] { Vector2T });
+                            node = MakeGenericNode(typeof(VertexUV<>), new Type[] { Vector2T });
+                            break;
                         case (int)GenericMinor.TextureReferenceByName:
-                            return new TextureReferenceByName(this) as BaseNode;
+                            node = new TextureReferenceByName(this) as BaseNode;
+                            break;
                         case (int)GenericMinor.VertexNormal:
-                            return MakeGenericNode(typeof(VertexNormals<>), new Type[] { Vector3T });
+                            node = MakeGenericNode(typeof(VertexNormals<>), new Type[] { Vector3T });
+                            break;
                         case (int)GenericMinor.Hardpoint:
-                            return MakeGenericNode(typeof(Hardpoint<>), new Type[] { Vector3T });
+                            node = MakeGenericNode(typeof(Hardpoint<>), new Type[] { Vector3T });
+                            break;
                         case (int)GenericMinor.Transform:
-                            return MakeGenericNode(typeof(RotationInfo<>), new Type[] { Vector3T });
+                            node = MakeGenericNode(typeof(RotationInfo<>), new Type[] { Vector3T });
+                            break;
                         case (int)GenericMinor.MeshLod:
-                            return new LodCollection(this) as BaseNode;
+                            node = new LodCollection(this) as BaseNode;
+                            break;
                         case (int)GenericMinor.FaceList:
-                            return MakeGenericNode(typeof(FaceList<>), new Type[] { Vector3T });
+                            node = MakeGenericNode(typeof(FaceList<>), new Type[] { Vector3T });
+                            break;
                         case (int)GenericMinor.SkinSelector:
-                            return new SkinCollection(this) as BaseNode;
+                            node = new SkinCollection(this) as BaseNode;
+                            break;
                         case (int)GenericMinor.MeshDescriptor:
-                            return MakeGenericNode(typeof(PartDescriptor<>), new Type[] { Vector3T });
+                            node = MakeGenericNode(typeof(PartDescriptor<>), new Type[] { Vector3T });
+                            break;
                         case (int)GenericMinor.EngineGlow:
-                            return MakeGenericNode(typeof(EngineGlow<>), new Type[] { Vector3T });
+                            node = MakeGenericNode(typeof(EngineGlow<>), new Type[] { Vector3T });
+                            break;
                         default:
                             logger?.Invoke("Found unknown node type " + majorId + " " + minorId + " at " + BaseStream.Position + " context:" + context);
-                            return new BaseNode(this);
+                            node = new BaseNode(this);
+                            break;
                     }
+                    break;
 
                 case (int)Major.Texture:
                     switch (minorId)
                     {
                         case (int)TextureMinor.Texture:
-                            return new Texture(this, preHeaderOffset);
+                            node = new Texture(this, preHeaderOffset);
+                            break;
                         case (int)TextureMinor.TextureWithAlpha:
-                            return new Texture(this, preHeaderOffset);
+                            node = new Texture(this, preHeaderOffset);
+                            break;
                         default:
                             logger?.Invoke("Found unknown node type " + majorId + " " + minorId + " at " + BaseStream.Position + " context:" + context);
-                            return new Texture(this, preHeaderOffset);
+                            node = new Texture(this, preHeaderOffset);
+                            break;
                     }
+                    break;
                 default:
-                    return new BaseNode(this);
+                    node = new BaseNode(this);
+                    break;
             }
+
+            nodeCache[offset] = node;
+
+            return node;
         }
 
         /// <summary>
@@ -309,6 +342,20 @@ namespace SchmooTech.XWOpt
                 return (Collection<TVector>)V3Adapter.ReadCollection(this, count);
             }
             throw new ArgumentException("Unknown vector type.");
+        }
+
+        internal TexturePallet ReadPalette(int offset)
+        {
+            if (paletteCache.ContainsKey(offset))
+            {
+                return paletteCache[offset];
+            }
+
+            Seek(offset);
+
+            var palette = new TexturePallet(this);
+            paletteCache[offset] = palette;
+            return palette;
         }
     }
 }

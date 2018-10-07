@@ -57,7 +57,6 @@ namespace SchmooTech.XWOpt.OptNode
 
             group = reader.ReadInt32();
 
-            // TODO: Detect pallet reuse.
             var palletAddressOffset = reader.ReadInt32();
 
             reader.Seek(textureNameOffset);
@@ -101,8 +100,7 @@ namespace SchmooTech.XWOpt.OptNode
             // A few files have invalid palletOffsets.
             if (palletOffset > reader.globalOffset)
             {
-                reader.Seek(palletOffset);
-                pallet = new TexturePallet(reader);
+                pallet = reader.ReadPalette(palletOffset);
             }
         }
 
