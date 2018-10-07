@@ -42,7 +42,7 @@ namespace SchmooTech.XWOpt.OptNode
             // No idea why this would happen, but my understanding of this block is wrong if it does.
             if (lodChildCount != lodThresholdCount)
             {
-                reader.logger(String.Format(CultureInfo.CurrentCulture, "Not the same number of LOD meshes ({0}) as LOD offsets ({1}) at {2:X}", lodChildCount, lodThresholdCount, reader.BaseStream.Position));
+                reader.logger?.Invoke(String.Format(CultureInfo.CurrentCulture, "Not the same number of LOD meshes ({0}) as LOD offsets ({1}) at {2:X}", lodChildCount, lodThresholdCount, reader.BaseStream.Position));
             }
 
             reader.Seek(lodChildOffset);

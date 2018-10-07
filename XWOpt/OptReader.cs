@@ -163,7 +163,7 @@ namespace SchmooTech.XWOpt
                         case (int)GenericMinor.EngineGlow:
                             return MakeGenericNode(typeof(EngineGlow<>), new Type[] { Vector3T });
                         default:
-                            logger.Invoke("Found unknown node type " + majorId + " " + minorId + " at " + BaseStream.Position + " context:" + context);
+                            logger?.Invoke("Found unknown node type " + majorId + " " + minorId + " at " + BaseStream.Position + " context:" + context);
                             return new BaseNode(this);
                     }
 
