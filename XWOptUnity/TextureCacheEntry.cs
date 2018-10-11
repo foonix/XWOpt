@@ -38,6 +38,8 @@ namespace SchmooTech.XWOptUnity
         private XWOpt.OptNode.Texture textureNode;
         private readonly int optVersion;
 
+        internal Vector2 Size { get { return new Vector2(textureNode.Width, textureNode.Height); } }
+
         /// <summary>
         /// Generate albido and emssive textures.
         /// </summary>
@@ -162,6 +164,34 @@ namespace SchmooTech.XWOptUnity
             material.SetFloat("_Glossiness", 0.1f);
 
             return material;
+        }
+
+        internal struct AlbidoAndEmissiveTextures
+        {
+            internal Texture2D albido;
+            internal Texture2D emissive;
+        }
+
+        internal AlbidoAndEmissiveTextures MakeTextures()
+        {
+            AlbidoAndEmissiveTextures textures;
+
+            textures.albido = new Texture2D(textureNode.Width, textureNode.Height, AlbidoFormat, false);
+            textures.albido.LoadRawTextureData(rawAlbedo);
+            textures.albido.Apply();
+
+            if (null != rawEmissive)
+            {
+                textures.emissive = new Texture2D(textureNode.Width, textureNode.Height, EmissiveFormat, false);
+                textures.emissive.LoadRawTextureData(rawEmissive);
+                textures.emissive.Apply();
+            }
+            else
+            {
+                textures.emissive = null;
+            }
+
+            return textures;
         }
     }
 }

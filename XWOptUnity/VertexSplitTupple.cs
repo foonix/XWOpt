@@ -23,7 +23,7 @@ namespace SchmooTech.XWOptUnity
 {
     struct VertexSplitTuple
     {
-        public int vId, uvId, normId;
+        public int vId, uvId, normId, texId;
         public static bool operator ==(VertexSplitTuple left, VertexSplitTuple right)
         {
             if (ReferenceEquals(left, null))
@@ -48,12 +48,12 @@ namespace SchmooTech.XWOptUnity
         }
         public bool Equals(VertexSplitTuple obj)
         {
-            return vId == obj.vId && uvId == obj.uvId && normId == obj.normId;
+            return vId == obj.vId && uvId == obj.uvId && normId == obj.normId && texId == obj.texId;
         }
         public override int GetHashCode()
         {
             // overflow ok
-            return vId + uvId + normId;
+            return vId + uvId + normId + texId;
         }
     }
 }

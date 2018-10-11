@@ -30,12 +30,7 @@ namespace SchmooTech.XWOptUnity
 {
     class LodFactory
     {
-        Mesh mesh;
         NodeCollection _lodNode;
-        private List<List<int>> submeshList;
-        private List<Vector3> meshVerts;
-        private List<Vector2> meshUV;
-        private List<Vector3> meshNorms;
         readonly int _index;
         readonly float _threshold;
         PartFactory Part { get; set; }
@@ -69,32 +64,19 @@ namespace SchmooTech.XWOptUnity
             }
         }
 
-        void GatherSubmeshes()
+        Mesh MakeMesh(FaceList<Vector3> faceList, string textureName)
         {
-            List<FaceList<Vector3>> faceLists = new List<FaceList<Vector3>>();
-
-            // All meshes inside of the LOD node, recursively
-            foreach (var child in _lodNode)
-            {
-                switch (child)
-                {
-                    case FaceList<Vector3> faces:
-                        faceLists.Add(faces);
-                        break;
-                }
-            }
-
-            MakeMesh(faceLists, Part.verts, Part.vertNormals, Part.vertUV);
-        }
-
-        void MakeMesh(List<FaceList<Vector3>> faceLists, MeshVertices<Vector3> verts, VertexNormals<Vector3> vertNormals, VertexUV<Vector2> vertUV)
-        {
-            submeshList = new List<List<int>>();
+            // MeshVertices<Vector3> verts, VertexNormals<Vector3> vertNormals, VertexUV<Vector2> vertUV
 
             // Must remain the same length.
-            meshVerts = new List<Vector3>();
-            meshUV = new List<Vector2>();
-            meshNorms = new List<Vector3>();
+            var meshVerts = new List<Vector3>();
+            var meshUV = new List<Vector2>();
+            var meshNorms = new List<Vector3>();
+
+            // References into part level mesh data
+            var optVerts = Part.verts;
+            var optNormals = Part.vertNormals;
+            var optUV = Part.vertUV;
 
             // Unity can only have one normal and UV per vertex.
             // All sub-meshes (triangle lists) in the same mesh have to share the same vertex list.
@@ -103,121 +85,124 @@ namespace SchmooTech.XWOptUnity
             // or UV than another polygon.
             var usedVertLookup = new Dictionary<VertexSplitTuple, int>();
 
+            int texId = Part.Craft.TextureAtlas.TextureId[textureName];
+            Rect atlasRect = Part.Craft.TextureAtlas.AtlasLocations[texId];
+            
             // Build the vert/normal/UV lists
-            foreach (FaceList<Vector3> faceList in faceLists)
+            var triangles = new List<int>();
+            for (int i = 0; i < faceList.Count; i++)
             {
-                var triangles = new List<int>();
-                for (int i = 0; i < faceList.Count; i++)
+                var newVertRefs = new int[4];
+
+                // Some normals in xwing98 tug, xwing98 bwing, xwa shuttle and possibly others, are garbage data.
+                // Other normals in the vicinity might also garbage, so flate shade the entire face.
+                bool rejectNormal = false;
+                for (int j = 0; j < 4; j++)
                 {
-                    var newVertRefs = new int[4];
-
-                    // Some normals in xwing98 tug, xwing98 bwing, xwa shuttle and possibly others, are garbage data.
-                    // Other normals in the vicinity might also garbage, so flate shade the entire face.
-                    bool rejectNormal = false;
-                    for (int j = 0; j < 4; j++)
+                    var id = faceList.VertexNormalRef[i][j];
+                    if (id < 0 || id >= optNormals.Normals.Count || optNormals.Normals[id] == Vector3.zero)
                     {
-                        var id = faceList.VertexNormalRef[i][j];
-                        if (id < 0 || id >= vertNormals.Normals.Count || vertNormals.Normals[id] == Vector3.zero)
-                        {
-                            rejectNormal = true;
-                        }
+                        rejectNormal = true;
                     }
+                }
 
-                    // check each point for need to generate new vertex
-                    for (int j = 0; j < 4; j++)
-                    {
-                        VertexSplitTuple vt;
-                        vt.vId = faceList.VertexRef[i][j];
-                        vt.uvId = faceList.UVRef[i][j];
-                        vt.normId = faceList.VertexNormalRef[i][j];
+                // check each point for need to generate new vertex
+                for (int j = 0; j < 4; j++)
+                {
+                    VertexSplitTuple vt;
+                    vt.vId = faceList.VertexRef[i][j];
+                    vt.uvId = faceList.UVRef[i][j];
+                    vt.normId = faceList.VertexNormalRef[i][j];
+                    vt.texId = texId;
 
                         // Some faces are triangles instead of quads.
-                        if (vt.vId == -1 || vt.uvId == -1 || vt.normId == -1)
-                        {
-                            newVertRefs[j] = -1;
-                            continue;
-                        }
-
-                        // Some normals in xwing98 tug, xwing98 bwing, xwa shuttle and possibly others, are garbage data.
-                        // Zero normals can cause unity lighting problems.  Fallback on face normal.
-                        Vector3 normal;
-                        if (rejectNormal)
-                        {
-                            normal = GetFaceNormal(faceList.VertexRef[i], verts);
-                        }
-                        else
-                        {
-                            normal = vertNormals.Normals[vt.normId];
-                        }
-
-                        if (usedVertLookup.ContainsKey(vt) && !rejectNormal)
-                        {
-                            // reuse the vertex
-                            newVertRefs[j] = usedVertLookup[vt];
-                        }
-                        else
-                        {
-                            // make a new one
-                            if (vt.vId > verts.Vertices.Count - 1)
-                            {
-                                Debug.LogError(string.Format(CultureInfo.CurrentCulture, "Vert {0}/{4} out of bound {1:X} {2} {3} ", vt.vId, faceList.OffsetInFile, i, j, verts.Vertices.Count));
-                            }
-                            if (vt.normId > vertNormals.Normals.Count - 1)
-                            {
-                                Debug.LogError(string.Format(CultureInfo.CurrentCulture, "Normal {0}/{4} out of bound {1:X} {2} {3} ", vt.normId, faceList.OffsetInFile, i, j, vertNormals.Normals.Count));
-                            }
-                            if (vt.uvId > vertUV.Vertices.Count - 1)
-                            {
-                                Debug.LogError(string.Format(CultureInfo.CurrentCulture, "UV {0}/{4} out of bound {1:X} {2} {3} ", vt.uvId, faceList.OffsetInFile, i, j, vertUV.Vertices.Count));
-                            }
-                            meshVerts.Add(verts.Vertices[vt.vId]);
-                            meshUV.Add(vertUV.Vertices[vt.uvId]);
-                            meshNorms.Add(normal.normalized);
-
-                            // Index it so we can find it later.
-                            usedVertLookup[vt] = meshVerts.Count - 1;
-                            newVertRefs[j] = usedVertLookup[vt];
-                        }
-                    }
-
-                    // TODO: Less nieve quad split.
-                    // First triangle
-                    triangles.Add(newVertRefs[1]);
-                    triangles.Add(newVertRefs[0]);
-                    triangles.Add(newVertRefs[2]);
-
-                    // second triangle if a quad
-                    if (newVertRefs[3] != -1)
+                    if (vt.vId == -1 || vt.uvId == -1 || vt.normId == -1)
                     {
-                        triangles.Add(newVertRefs[3]);
-                        triangles.Add(newVertRefs[2]);
-                        triangles.Add(newVertRefs[0]);
+                        newVertRefs[j] = -1;
+                        continue;
                     }
 
+                    // Some normals in xwing98 tug, xwing98 bwing, xwa shuttle and possibly others, are garbage data.
+                    // Zero normals can cause unity lighting problems.  Fallback on face normal.
+                    Vector3 normal;
+                    if (rejectNormal)
+                    {
+                        normal = GetFaceNormal(faceList.VertexRef[i], optVerts);
+                    }
+                    else
+                    {
+                        normal = optNormals.Normals[vt.normId];
+                    }
+
+                    if (usedVertLookup.ContainsKey(vt) && !rejectNormal)
+                    {
+                        // reuse the vertex
+                        newVertRefs[j] = usedVertLookup[vt];
+                    }
+                    else
+                    {
+                        // make a new one
+                        if (vt.vId > optVerts.Vertices.Count - 1)
+                        {
+                            Debug.LogError(string.Format(CultureInfo.CurrentCulture, "Vert {0}/{4} out of bound {1:X} {2} {3} ", vt.vId, faceList.OffsetInFile, i, j, optVerts.Vertices.Count));
+                        }
+                        if (vt.normId > optNormals.Normals.Count - 1)
+                        {
+                            Debug.LogError(string.Format(CultureInfo.CurrentCulture, "Normal {0}/{4} out of bound {1:X} {2} {3} ", vt.normId, faceList.OffsetInFile, i, j, optNormals.Normals.Count));
+                        }
+                        if (vt.uvId > optUV.Vertices.Count - 1)
+                        {
+                            Debug.LogError(string.Format(CultureInfo.CurrentCulture, "UV {0}/{4} out of bound {1:X} {2} {3} ", vt.uvId, faceList.OffsetInFile, i, j, optUV.Vertices.Count));
+                        }
+                        meshVerts.Add(optVerts.Vertices[vt.vId]);
+                        meshNorms.Add(normal.normalized);
+
+                        // translate uv to atlas space
+                        Vector2 uv = optUV.Vertices[vt.uvId];
+                        uv.x = uv.x * atlasRect.width + atlasRect.xMin;
+                        uv.y = uv.y * atlasRect.height + atlasRect.yMin;
+                        meshUV.Add(uv);
+
+                        // Index it so we can find it later.
+                        usedVertLookup[vt] = meshVerts.Count - 1;
+                        newVertRefs[j] = usedVertLookup[vt];
+                    }
                 }
-                submeshList.Add(triangles);
+
+                // TODO: Less nieve quad split.
+                // First triangle
+                triangles.Add(newVertRefs[1]);
+                triangles.Add(newVertRefs[0]);
+                triangles.Add(newVertRefs[2]);
+
+                // second triangle if a quad
+                if (newVertRefs[3] != -1)
+                {
+                    triangles.Add(newVertRefs[3]);
+                    triangles.Add(newVertRefs[2]);
+                    triangles.Add(newVertRefs[0]);
+                }
             }
+
+            var mesh = new Mesh
+            {
+                vertices = meshVerts.ToArray(),
+                uv = meshUV.ToArray(),
+                normals = meshNorms.ToArray(),
+                triangles = triangles.ToArray()
+            };
+
+            return mesh;
         }
 
         internal void ParallelizableBake()
         {
-            GatherSubmeshes();
+
         }
 
         internal void MainThreadBake()
         {
-            mesh = new Mesh();
-            mesh.name = Part.descriptor.PartType.ToString() + "_LOD" + _index;
 
-            mesh.SetVertices(meshVerts);
-            mesh.SetUVs(0, meshUV);
-            mesh.SetNormals(meshNorms);
-
-            mesh.subMeshCount = submeshList.Count;
-            for (int i = 0; i < submeshList.Count; i++)
-            {
-                mesh.SetTriangles(submeshList[i], i);
-            }
         }
 
         /// <summary>
@@ -246,7 +231,7 @@ namespace SchmooTech.XWOptUnity
             lodObj.AddComponent<MeshRenderer>();
             Helpers.AttachTransform(parent, lodObj);
 
-            var matsUsed = new List<string>();
+            var subMeshes = new List<CombineInstance>();
 
             // It seems there is no direct connection between meshes and the textures that go on
             // them besides that the texture preceeds the mesh in this list.
@@ -290,34 +275,33 @@ namespace SchmooTech.XWOptUnity
                                 break;
                         }
                         break;
-                    case FaceList<Vector3> _:
+                    case FaceList<Vector3> f:
                         // Some meshes are not preceeded by a texture.  In this case use a global default texture.
                         if (null == previousTexture)
                         {
-                            matsUsed.Add("Tex00000");
+                            subMeshes.Add(new CombineInstance()
+                            {
+                                mesh = MakeMesh(f, "Tex00000")
+                            });
                         }
                         else
                         {
-                            matsUsed.Add(previousTexture);
+                            subMeshes.Add(new CombineInstance()
+                            {
+                                mesh = MakeMesh(f, previousTexture)
+                            });
                         }
                         previousTexture = null;
                         break;
                 }
             }
 
-            // Look up materials used by name to get references to the actual materials.
-            Material[] mats = new Material[matsUsed.Count];
-            for (int i = 0; i < matsUsed.Count; i++)
-            {
-                Part.Craft.materials.TryGetValue(matsUsed[i], out Material mat);
-                if (null == mat)
-                {
-                    Debug.Log("Mesh references nonexistant material " + matsUsed[i]);
-                }
-                mats[i] = mat;
-            }
-            lodObj.GetComponent<MeshRenderer>().materials = mats;
+            lodObj.GetComponent<MeshRenderer>().material = Part.Craft.TextureAtlas.Material;
 
+            var mesh = new Mesh();
+            mesh.CombineMeshes(subMeshes.ToArray(), true, false, false);
+            mesh.RecalculateBounds();
+            mesh.name = parent.name + "_LOD" + _index + "_mesh";
             lodObj.GetComponent<MeshFilter>().mesh = mesh;
 
             return new LOD(_threshold, new Renderer[] { lodObj.GetComponent<MeshRenderer>() });

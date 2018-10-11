@@ -180,8 +180,8 @@ namespace SchmooTech.XWOptUnity
         /// </summary>
         public bool NeedsMainThreadBake { get; private set; } = true;
 
-        internal Dictionary<string, TextureCacheEntry> unpackedTextures = new Dictionary<string, TextureCacheEntry>();
-        internal Dictionary<string, Material> materials = new Dictionary<string, Material>();
+        internal List<TextureCacheEntry> unpackedTextures = new List<TextureCacheEntry>();
+        internal TextureAtlas TextureAtlas { get; private set; }
         List<PartFactory> nonTargetGroupedParts = new List<PartFactory>();
         Dictionary<DistinctTargetGroupTuple, TargetGroupFactory> targetGroups = new Dictionary<DistinctTargetGroupTuple, TargetGroupFactory>();
 
@@ -298,7 +298,7 @@ namespace SchmooTech.XWOptUnity
             {
                 unpackedTextures = textureIterator.AsParallel().WithDegreeOfParallelism(degreesOfParallelism.Value)
                     .Select(t => new TextureCacheEntry(t, Opt.Version, makeEmissiveTexture ? emissiveExponent : (float?)null))
-                    .ToDictionary(t => t.Name, t => t);
+                    .ToList();
 
                 nonTargetGroupedParts.AsParallel().WithDegreeOfParallelism(degreesOfParallelism.Value).ForAll(p => p.ParallelizableBake());
             }
@@ -306,7 +306,7 @@ namespace SchmooTech.XWOptUnity
             {
                 unpackedTextures = textureIterator
                     .Select(t => new TextureCacheEntry(t, Opt.Version, makeEmissiveTexture ? emissiveExponent : (float?)null))
-                    .ToDictionary(t => t.Name, t => t);
+                    .ToList();
 
                 nonTargetGroupedParts.ForEach(p => p.ParallelizableBake());
             }
@@ -338,11 +338,8 @@ namespace SchmooTech.XWOptUnity
             // Some models seem to share textures between parts by placing them at the top level.
             // So we need to gather all of the textures in the model
             // Making the assumption here that texture names are unique.
-            materials.Clear();
-            foreach (var texture in unpackedTextures)
-            {
-                materials.Add(texture.Key, texture.Value.MakeMaterial(PartShader));
-            }
+
+            TextureAtlas = new TextureAtlas(unpackedTextures, PartShader, "OPT Craft Atlas");
             unpackedTextures.Clear();
 
             foreach (var part in nonTargetGroupedParts)
