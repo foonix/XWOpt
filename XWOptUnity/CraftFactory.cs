@@ -105,13 +105,14 @@ namespace SchmooTech.XWOptUnity
         public ProcessTargetGroupHandler ProcessTargetGroup { get; set; }
 
         /// <summary>
-        /// The shader to use on the materials.  Default is Unity "Standard" shader.
+        /// The shader to use on the materials.  Default is Unity "XwOptUnity/TextureAtlas" shader.
+        /// Shader must support atlas texture tiling.
         /// </summary>
         public Shader PartShader
         {
             get
             {
-                return partShader ?? (partShader = Shader.Find("Standard"));
+                return partShader;
             }
             set
             {
@@ -119,7 +120,7 @@ namespace SchmooTech.XWOptUnity
                 NeedsMainThreadBake = NeedsParallelizableBake = true;
             }
         }
-        private Shader partShader;
+        private Shader partShader = Shader.Find("XwOptUnity/TextureAtlas");
 
         /// <summary>
         /// Distance between opposite corners of the box encompasing the craft.  Used for LOD cutover.
@@ -180,7 +181,7 @@ namespace SchmooTech.XWOptUnity
         /// </summary>
         public bool NeedsMainThreadBake { get; private set; } = true;
 
-        internal List<TextureCacheEntry> unpackedTextures = new List<TextureCacheEntry>();
+        internal List<XWOpt.OptNode.Texture> textures = new List<XWOpt.OptNode.Texture>();
         internal TextureAtlas TextureAtlas { get; private set; }
         List<PartFactory> nonTargetGroupedParts = new List<PartFactory>();
         Dictionary<DistinctTargetGroupTuple, TargetGroupFactory> targetGroups = new Dictionary<DistinctTargetGroupTuple, TargetGroupFactory>();
@@ -209,7 +210,7 @@ namespace SchmooTech.XWOptUnity
 
         public CraftFactory(Stream stream)
         {
-            if(stream is null)
+            if (stream is null)
             {
                 throw new ArgumentNullException("stream");
             }
@@ -281,6 +282,9 @@ namespace SchmooTech.XWOptUnity
                     }
                 }
             }
+
+            textures = Opt.OfType<XWOpt.OptNode.Texture>().ToList();
+            TextureAtlas = new TextureAtlas(textures, PartShader, "OPT Craft Atlas", Opt.Version, makeEmissiveTexture ? emissiveExponent : (float?)null);
         }
 
         /// <summary>
@@ -292,26 +296,11 @@ namespace SchmooTech.XWOptUnity
         /// <param name="internalParallel">Internally parallelize operations </param>
         public void ParallelizableBake(int? degreesOfParallelism)
         {
-            var textureIterator = Opt.OfType<XWOpt.OptNode.Texture>();
-
-            if (degreesOfParallelism.HasValue)
-            {
-                unpackedTextures = textureIterator.AsParallel().WithDegreeOfParallelism(degreesOfParallelism.Value)
-                    .Select(t => new TextureCacheEntry(t, Opt.Version, makeEmissiveTexture ? emissiveExponent : (float?)null))
-                    .ToList();
-
-                nonTargetGroupedParts.AsParallel().WithDegreeOfParallelism(degreesOfParallelism.Value).ForAll(p => p.ParallelizableBake());
-            }
-            else
-            {
-                unpackedTextures = textureIterator
-                    .Select(t => new TextureCacheEntry(t, Opt.Version, makeEmissiveTexture ? emissiveExponent : (float?)null))
-                    .ToList();
-
-                nonTargetGroupedParts.ForEach(p => p.ParallelizableBake());
-            }
+            TextureAtlas.ParallelizableBake(degreesOfParallelism);
 
             // TODO: bake calls for target groups
+
+            nonTargetGroupedParts.ForEach(p => p.ParallelizableBake(degreesOfParallelism));
 
             NeedsParallelizableBake = false;
             NeedsMainThreadBake = true;
@@ -339,8 +328,7 @@ namespace SchmooTech.XWOptUnity
             // So we need to gather all of the textures in the model
             // Making the assumption here that texture names are unique.
 
-            TextureAtlas = new TextureAtlas(unpackedTextures, PartShader, "OPT Craft Atlas");
-            unpackedTextures.Clear();
+            TextureAtlas.MainThreadBake();
 
             foreach (var part in nonTargetGroupedParts)
             {

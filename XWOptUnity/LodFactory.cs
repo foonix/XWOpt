@@ -28,7 +28,7 @@ using UnityEngine;
 
 namespace SchmooTech.XWOptUnity
 {
-    class LodFactory
+    class LodFactory : IBakeable
     {
         NodeCollection _lodNode;
         readonly int _index;
@@ -72,6 +72,8 @@ namespace SchmooTech.XWOptUnity
             var meshVerts = new List<Vector3>();
             var meshUV = new List<Vector2>();
             var meshNorms = new List<Vector3>();
+            var meshUV2 = new List<Vector2>();  // bottom left corner of subtexture in atlas
+            var meshUV3 = new List<Vector2>();  // top right corner of subtexture in atlas
 
             // References into part level mesh data
             var optVerts = Part.verts;
@@ -85,9 +87,9 @@ namespace SchmooTech.XWOptUnity
             // or UV than another polygon.
             var usedVertLookup = new Dictionary<VertexSplitTuple, int>();
 
-            int texId = Part.Craft.TextureAtlas.TextureId[textureName];
-            Rect atlasRect = Part.Craft.TextureAtlas.AtlasLocations[texId];
-            
+            int texId = Part.Craft.TextureAtlas.Layout.TextureId[textureName];
+            Rect atlasRect = Part.Craft.TextureAtlas.Layout.GetUvLocation(texId);
+
             // Build the vert/normal/UV lists
             var triangles = new List<int>();
             for (int i = 0; i < faceList.Count; i++)
@@ -115,7 +117,7 @@ namespace SchmooTech.XWOptUnity
                     vt.normId = faceList.VertexNormalRef[i][j];
                     vt.texId = texId;
 
-                        // Some faces are triangles instead of quads.
+                    // Some faces are triangles instead of quads.
                     if (vt.vId == -1 || vt.uvId == -1 || vt.normId == -1)
                     {
                         newVertRefs[j] = -1;
@@ -159,9 +161,12 @@ namespace SchmooTech.XWOptUnity
 
                         // translate uv to atlas space
                         Vector2 uv = optUV.Vertices[vt.uvId];
-                        uv.x = uv.x * atlasRect.width + atlasRect.xMin;
-                        uv.y = uv.y * atlasRect.height + atlasRect.yMin;
+                        //uv.x = uv.x * atlasRect.width + atlasRect.xMin;
+                        //uv.y = uv.y * atlasRect.height + atlasRect.yMin;
                         meshUV.Add(uv);
+
+                        meshUV2.Add(new Vector2(atlasRect.x, atlasRect.y));
+                        meshUV3.Add(new Vector2(atlasRect.width, atlasRect.height));
 
                         // Index it so we can find it later.
                         usedVertLookup[vt] = meshVerts.Count - 1;
@@ -187,20 +192,22 @@ namespace SchmooTech.XWOptUnity
             var mesh = new Mesh
             {
                 vertices = meshVerts.ToArray(),
-                uv = meshUV.ToArray(),
                 normals = meshNorms.ToArray(),
-                triangles = triangles.ToArray()
+                triangles = triangles.ToArray(),
+                uv = meshUV.ToArray(),
+                uv2 = meshUV2.ToArray(),
+                uv3 = meshUV3.ToArray(),
             };
 
             return mesh;
         }
 
-        internal void ParallelizableBake()
+        public void ParallelizableBake(int? degreesOfParallelism)
         {
 
         }
 
-        internal void MainThreadBake()
+        public void MainThreadBake()
         {
 
         }
@@ -279,30 +286,26 @@ namespace SchmooTech.XWOptUnity
                         // Some meshes are not preceeded by a texture.  In this case use a global default texture.
                         if (null == previousTexture)
                         {
-                            subMeshes.Add(new CombineInstance()
-                            {
-                                mesh = MakeMesh(f, "Tex00000")
-                            });
+                            previousTexture = "Tex00000";
                         }
-                        else
+
+                        subMeshes.Add(new CombineInstance()
                         {
-                            subMeshes.Add(new CombineInstance()
-                            {
-                                mesh = MakeMesh(f, previousTexture)
-                            });
-                        }
+                            mesh = MakeMesh(f, previousTexture)
+                        });
+
                         previousTexture = null;
                         break;
                 }
             }
 
-            lodObj.GetComponent<MeshRenderer>().material = Part.Craft.TextureAtlas.Material;
+            lodObj.GetComponent<MeshRenderer>().sharedMaterial = Part.Craft.TextureAtlas.Material;
 
             var mesh = new Mesh();
             mesh.CombineMeshes(subMeshes.ToArray(), true, false, false);
             mesh.RecalculateBounds();
             mesh.name = parent.name + "_LOD" + _index + "_mesh";
-            lodObj.GetComponent<MeshFilter>().mesh = mesh;
+            lodObj.GetComponent<MeshFilter>().sharedMesh = mesh;
 
             return new LOD(_threshold, new Renderer[] { lodObj.GetComponent<MeshRenderer>() });
         }

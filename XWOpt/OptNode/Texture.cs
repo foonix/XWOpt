@@ -50,6 +50,8 @@ namespace SchmooTech.XWOpt.OptNode
         [CLSCompliant(false)]
         public TexturePallet Pallet { get => pallet; }
 
+        const int Rgb565ByteWidth = 2;
+
         internal Texture(OptReader reader, int textureNameOffset) : base(reader)
         {
             // TODO: Check for alpha channel 0 26 node.
@@ -122,6 +124,64 @@ namespace SchmooTech.XWOpt.OptNode
             }
 
             return img;
+        }
+
+        /// <summary>
+        /// Copy range of RGB565 color values from the texture into <paramref name="target"/>,
+        /// dereferencing palette references.
+        ///
+        /// If the volume to be blitted exceeds either the texture or target area, colors will be wrapped to the other side.
+        /// </summary>
+        /// <param name="target">Buffer to blit into</param>
+        /// <param name="targetWidth">Pixel width of target buffer. (1 pixel = 2 bytes)</param>
+        /// <param name="sourceX">Bottom left X pixel coordinate of the texture area to blit</param>
+        /// <param name="sourceY">Bottom left Y pixel coordinate of the texture area to blit</param>
+        /// <param name="targetX">Bottom left X pixel coordinate to recieve color values</param>
+        /// <param name="targetY">Bottom left Y pixel coordinate to recieve color values</param>
+        /// <param name="sizeX">Pixel width of area to blit</param>
+        /// <param name="sizeY">Pixel height of area to blit</param>
+        /// <param name="palletNumber">Which palette to use</param>
+        /// <param name="mipLevel">Texture mip level to blit from.  Source and size must be in the bounds of the mip level.</param>
+        public void BlitRangeInto(byte[] target, int targetWidth, int targetHeight, int sourceX, int sourceY, int targetX, int targetY, int sizeX, int sizeY, int palletNumber, int mipLevel = 0)
+        {
+            for (int y = 0; y < sizeY; y++)
+            {
+                // positive wrap
+                int tY = (targetY + y) % targetHeight;
+                int sY = (sourceY + y) % height;
+                // negative wrap
+                tY = tY < 0 ? targetHeight + tY : tY;
+                sY = sY < 0 ? height + sY : sY;
+
+                for (int x = 0; x < sizeX; x++)
+                {
+                    // positive wrap
+                    int tX = (targetX + x) % targetWidth;
+                    int sX = (sourceX + x) % width;
+                    // negative wrap
+                    tX = tX < 0 ? targetWidth + tX : tX;
+                    sX = sX < 0 ? width + sX : sX;
+
+                    // target byte
+                    int t = (Rgb565ByteWidth * tX) + (Rgb565ByteWidth * targetWidth * tY);
+
+                    // source palette ref
+                    int sr = sX + (width * sY);
+
+                    ushort color;
+                    if (mipLevel > 0)
+                    {
+                        color = pallet[palletNumber, mipPalletRefs[mipLevel - 1][sr]];
+                    }
+                    else
+                    {
+                        color = pallet[palletNumber, texturePalletRefs[sr]];
+                    }
+
+                    target[t] = (byte)(color & 0xFF);  // low order byte
+                    target[t + 1] = (byte)(color >> 8);  // high order byte
+                }
+            }
         }
     }
 }

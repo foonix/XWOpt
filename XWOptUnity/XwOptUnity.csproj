@@ -51,13 +51,14 @@
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="HardpointFactory.cs" />
     <Compile Include="Helpers.cs" />
+    <Compile Include="IBakeable.cs" />
     <Compile Include="LodFactory.cs" />
     <Compile Include="PartFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TargetGroupFactory.cs" />
     <Compile Include="TargetPointFactory.cs" />
     <Compile Include="TextureAtlas.cs" />
-    <Compile Include="TextureCacheEntry.cs" />
+    <Compile Include="TextureAtlas.AtlasLayout.cs" />
     <Compile Include="VertexSplitTupple.cs" />
   </ItemGroup>
   <ItemGroup>

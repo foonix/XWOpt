@@ -144,11 +144,11 @@ namespace SchmooTech.XWOptUnity
             return partObj;
         }
 
-        internal void ParallelizableBake()
+        internal void ParallelizableBake(int? degreesOfParallelism)
         {
             foreach (var lod in _lods)
             {
-                lod.ParallelizableBake();
+                lod.ParallelizableBake(degreesOfParallelism);
             }
         }
 
