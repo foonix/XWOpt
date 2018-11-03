@@ -24,6 +24,7 @@ using SchmooTech.XWOpt.OptNode;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using UnityEngine;
 
 namespace SchmooTech.XWOptUnity
@@ -34,6 +35,7 @@ namespace SchmooTech.XWOptUnity
         readonly int _index;
         readonly float _threshold;
         PartFactory Part { get; set; }
+        Dictionary<int, Mesh> skinSpecificSubmeshes = new Dictionary<int, Mesh>();
 
         /// <summary>
         /// Fudge factor for increasing LOD cutover distance based on increased resolution and improved
@@ -209,7 +211,35 @@ namespace SchmooTech.XWOptUnity
 
         public void MainThreadBake()
         {
+            // cache a separate mesh for each skin.
+            int skinCount = 1;
+            foreach (var collection in _lodNode.OfType<SkinCollection>())
+            {
+                if (collection.Children.Count > skinCount)
+                {
+                    skinCount = collection.Children.Count;
+                }
+            }
 
+            for (int skin = 0; skin < skinCount; skin++)
+            {
+                var subMeshes = new List<CombineInstance>();
+
+                foreach (var assoc in WalkTextureAssociations(skin))
+                {
+                    subMeshes.Add(new CombineInstance()
+                    {
+                        mesh = MakeMesh(assoc.faceList, assoc.textureName)
+                    });
+                }
+
+                var mesh = new Mesh();
+                mesh.CombineMeshes(subMeshes.ToArray(), true, false, false);
+                mesh.RecalculateBounds();
+                mesh.name = ToString() + "_skin" + skin;
+
+                skinSpecificSubmeshes[skin] = mesh;
+            }
         }
 
         /// <summary>
@@ -233,13 +263,32 @@ namespace SchmooTech.XWOptUnity
 
         internal LOD MakeLOD(GameObject parent, int skin)
         {
-            GameObject lodObj = new GameObject(parent.name + "_LOD" + _index);
+            GameObject lodObj = new GameObject(ToString());
             lodObj.AddComponent<MeshFilter>();
             lodObj.AddComponent<MeshRenderer>();
             Helpers.AttachTransform(parent, lodObj);
 
-            var subMeshes = new List<CombineInstance>();
+            // Lower LODs may not have skin specific textures even if higher LODs do.
+            if (skin >= skinSpecificSubmeshes.Count)
+                skin = 0;
 
+            lodObj.GetComponent<MeshFilter>().sharedMesh = skinSpecificSubmeshes[skin];
+            lodObj.GetComponent<MeshRenderer>().sharedMaterial = Part.Craft.TextureAtlas.Material;
+
+            return new LOD(_threshold, new Renderer[] { lodObj.GetComponent<MeshRenderer>() });
+        }
+
+        /// <summary>
+        /// Which texture to use for which submesh
+        /// </summary>
+        struct TextureMeshAssociation
+        {
+            public string textureName;
+            public FaceList<Vector3> faceList;
+        }
+
+        IEnumerable<TextureMeshAssociation> WalkTextureAssociations(int skin)
+        {
             // It seems there is no direct connection between meshes and the textures that go on
             // them besides that the texture preceeds the mesh in this list.
             // So keep track of the last mesh or mesh reference we've seen and apply it to the next mesh.
@@ -289,25 +338,31 @@ namespace SchmooTech.XWOptUnity
                             previousTexture = "Tex00000";
                         }
 
-                        subMeshes.Add(new CombineInstance()
-                        {
-                            mesh = MakeMesh(f, previousTexture)
-                        });
+                        TextureMeshAssociation association;
+                        association.textureName = previousTexture;
+                        association.faceList = f;
+
+                        yield return association;
 
                         previousTexture = null;
                         break;
                 }
             }
+        }
 
-            lodObj.GetComponent<MeshRenderer>().sharedMaterial = Part.Craft.TextureAtlas.Material;
+        public override string ToString()
+        {
+            string partName;
+            if (Part.descriptor is null)
+            {
+                partName = "Unknown Part";
+            }
+            else
+            {
+                partName = Part.descriptor.PartType.ToString();
+            }
 
-            var mesh = new Mesh();
-            mesh.CombineMeshes(subMeshes.ToArray(), true, false, false);
-            mesh.RecalculateBounds();
-            mesh.name = parent.name + "_LOD" + _index + "_mesh";
-            lodObj.GetComponent<MeshFilter>().sharedMesh = mesh;
-
-            return new LOD(_threshold, new Renderer[] { lodObj.GetComponent<MeshRenderer>() });
+            return partName + "_LOD" + _index;
         }
     }
 }

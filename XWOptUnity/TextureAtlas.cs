@@ -141,7 +141,7 @@ namespace SchmooTech.XWOptUnity
         {
             for (int i = 0; i < _albido.Length; i += 2)
             {
-                if (_emissive[i] == 0 || _emissive[i + 1] == 0)
+                if (_emissive[i] == 0 && _emissive[i + 1] == 0)
                     continue;
 
                 // Unpack RGB565, low order byte first.

@@ -72,6 +72,11 @@
       <SubType>Designer</SubType>
     </CodeAnalysisDictionary>
   </ItemGroup>
+  <ItemGroup>
+    <AdditionalFiles Include="TextureAtlas.shader">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </AdditionalFiles>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>set UnityProjectPlugins="C:\Users\foonix\Documents\Tie Fighter VR\Assets\Plugins\"
