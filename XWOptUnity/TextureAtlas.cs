@@ -59,6 +59,7 @@ namespace SchmooTech.XWOptUnity
             {
                 mainTexture = albidoAtlas,
                 name = name,
+                enableInstancing = true,
             };
 
             if (null != _emissive)
