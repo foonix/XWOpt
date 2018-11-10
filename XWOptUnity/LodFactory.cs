@@ -89,7 +89,10 @@ namespace SchmooTech.XWOptUnity
             // or UV than another polygon.
             var usedVertLookup = new Dictionary<VertexSplitTuple, int>();
 
-            int texId = Part.Craft.TextureAtlas.Layout.TextureId[textureName];
+            // Workaround for sat1.opt: no Tex00005 on LOD1.
+            int texId = 0;
+            Part.Craft.TextureAtlas.Layout.TextureId.TryGetValue(textureName, out texId);
+
             Rect atlasRect = Part.Craft.TextureAtlas.Layout.GetUvLocation(texId);
 
             // Build the vert/normal/UV lists
@@ -321,7 +324,9 @@ namespace SchmooTech.XWOptUnity
                         previousTexture = t.Name;
                         break;
                     case SkinCollection selector:
-                        switch (selector.Children[skin])
+                        // Workaround: Some training platform parts have varying number of skins.
+                        int usedSkin = skin % selector.Children.Count;
+                        switch (selector.Children[usedSkin])
                         {
                             case XWOpt.OptNode.Texture t:
                                 previousTexture = t.Name;
