@@ -13,7 +13,7 @@
 		Tags { "RenderType" = "Opaque" }
 
 		CGPROGRAM
-		#pragma surface surf Standard
+		#pragma surface surf Standard addshadow
 
 		struct Input {
 		  float2 uv_MainTex : TEXCOORD0;
