@@ -46,7 +46,7 @@ namespace SchmooTech.XWOptUnity
         internal static void AttachTransform(GameObject parent, GameObject child, Vector3 location)
         {
             Transform childTransform = child.GetComponent<Transform>();
-            childTransform.parent = parent.transform;
+            childTransform.SetParent(parent.transform, false);
             childTransform.localPosition = location;
             childTransform.localRotation = new Quaternion(0, 0, 0, 0);
         }

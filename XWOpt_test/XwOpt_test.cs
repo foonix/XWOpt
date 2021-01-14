@@ -19,22 +19,25 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+using NUnit.Framework;
 using SchmooTech.XWOpt;
 using SchmooTech.XWOpt.OptNode;
-using NUnit.Framework;
-using System.Linq;
-using System.Numerics;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Numerics;
+using System.Xml.Serialization;
 
 namespace XWOpt_test
 {
     [TestFixture]
     public class XWOpt_test
     {
-        static string TieFighter = @"C:\GOG Games\Star Wars - TIE Fighter (1998)\IVFILES\TIEFTR.OPT";
-        static string[] optDirs = {
+        static readonly string TieFighter = @"C:\GOG Games\Star Wars - TIE Fighter (1998)\IVFILES\TIEFTR.OPT";
+        static readonly string[] optDirs = {
             @"C:\GOG Games\Star Wars - XvT\ivfiles",
+            @"C:\GOG Games\Star Wars - XvT\BalanceOfPower\IVFILES",
             @"C:\GOG Games\Star Wars - TIE Fighter (1998)\IVFILES",
             @"C:\GOG Games\Star Wars - X-Wing (1998)\IVFiles",
             @"C:\GOG Games\Star Wars - X-Wing Alliance\FLIGHTMODELS",
@@ -53,6 +56,16 @@ namespace XWOpt_test
             0, 0, 0, 1
         );
 
+        [Serializable]
+        public struct LogEntry
+        {
+            public string file;
+            public string message;
+            public LogEntry(string file, string message) { this.file = file; this.message = message; }
+        }
+
+        static readonly List<LogEntry> messages = new List<LogEntry>();
+
         Vector3 RotateIntoUnitySpace(Vector3 v)
         {
             return Vector3.Transform(v, CoordinateConverter);
@@ -61,10 +74,16 @@ namespace XWOpt_test
         [SetUp]
         protected void SetUp()
         {
-            opt = new OptFile<Vector2, Vector3>()
-            {
-                Logger = msg => TestContext.Out.WriteLine(msg),
-            };
+            opt = new OptFile<Vector2, Vector3>();
+        }
+
+        [TearDown]
+        protected void TearDown()
+        {
+            var serializer = new XmlSerializer(messages.GetType());
+            var writer = new StreamWriter(@"c:\temp\opt-test-output.xml");
+            serializer.Serialize(writer, messages);
+            writer.Close();
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
@@ -75,6 +94,7 @@ namespace XWOpt_test
             foreach (string dir in optDirs)
             {
                 files.AddRange(Directory.GetFiles(dir, "*.OPT"));
+                files.AddRange(Directory.GetFiles(dir, "*.OP1"));
             }
 
             return files;
@@ -107,6 +127,12 @@ namespace XWOpt_test
         [Test, TestCaseSource("GetTestCases")]
         public void XWOpt_Read(string fileName)
         {
+            opt.Logger = msg =>
+            {
+                TestContext.Out.WriteLine(msg);
+                messages.Add(new LogEntry(fileName, msg));
+            };
+
             opt.Read(fileName);
         }
     }
