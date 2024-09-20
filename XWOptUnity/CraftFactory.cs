@@ -23,6 +23,7 @@ using SchmooTech.XWOpt;
 using SchmooTech.XWOpt.OptNode;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using UnityEngine;
@@ -36,7 +37,7 @@ namespace SchmooTech.XWOptUnity
     /// <param name="part">The part object that has been instantiated</param>
     /// <param name="descriptor">The XWOpt part descriptor associated with the part</param>
     /// <param name="descriptor">The XWOpt rotation information associated with the part</param>
-    public delegate void ProcessPartHandler(GameObject part, PartDescriptor<Vector3> descriptor, RotationInfo<Vector3> rotationInfo);
+    public delegate void ProcessPartHandler(int partIndex, GameObject part, PartDescriptor<Vector3> descriptor, RotationInfo<Vector3> rotationInfo);
 
     /// <summary>
     /// Callback for game specific setup of hardpoint objects after instantiation.
@@ -56,6 +57,12 @@ namespace SchmooTech.XWOptUnity
     /// <param name="type">The type of parts in the group.</param>
     /// <param name="location">The place on the model that is shown in the targeting window.</param>
     public delegate void ProcessTargetGroupHandler(GameObject targetGroup, int id, PartType type, Vector3 location);
+
+    /// <summary>
+    /// Call for game specific inspection and adjustment of the Root Nodes for this craft. The collection can be adjusted for game specific needs, before the parts are baked into the final craft.
+    /// </summary>
+    /// <param name="rootNodes">The root node collection from the OPT reader</param>
+    public delegate void ProcessPartHierarchyBeforeBake(Collection<BaseNode> rootNodes);
 
     /// <summary>
     /// Reads OPT model and helps instantiate GameObjects based on useful data in the file.
@@ -103,6 +110,11 @@ namespace SchmooTech.XWOptUnity
         /// Callback for game specific setup of targeting groups.
         /// </summary>
         public ProcessTargetGroupHandler ProcessTargetGroup { get; set; }
+
+        /// <summary>
+        /// Callback for game specific adjustment or inspection of the OptNode hierarchy.
+        /// </summary>
+        public ProcessPartHierarchyBeforeBake ProcessHierarchy { get; set; }
 
         /// <summary>
         /// The shader to use on the materials.  Default is Unity "XwOptUnity/TextureAtlas" shader.
@@ -208,7 +220,7 @@ namespace SchmooTech.XWOptUnity
             CraftFactoryImpl();
         }
 
-        public CraftFactory(Stream stream)
+        public CraftFactory(Stream stream, ProcessPartHierarchyBeforeBake processPartHierarchy = null)
         {
             if (stream is null)
             {
@@ -219,11 +231,15 @@ namespace SchmooTech.XWOptUnity
 
             Opt.Read(stream);
 
+            ProcessHierarchy = processPartHierarchy;
+
             CraftFactoryImpl();
         }
 
         private void CraftFactoryImpl()
         {
+            ProcessHierarchy?.Invoke(Opt.RootNodes);
+
             // Determine total size of the craft.  Used for LOD size.
             bool foundDescriptor = false;
             Vector3 upperBound = new Vector3(); // upper bound
@@ -257,9 +273,17 @@ namespace SchmooTech.XWOptUnity
                 Size = float.PositiveInfinity;
             }
 
-            foreach (NodeCollection shipPart in Opt.RootNodes.OfType<NodeCollection>())
+            for (int i = 0, partIndex = 0; i < Opt.RootNodes.Count; i++, partIndex++)
             {
-                var factory = new PartFactory(this, shipPart);
+                var shipPart = Opt.RootNodes[i] as SeparatorNode;
+                
+                if (shipPart == null)
+                {
+                    partIndex--;
+                    continue;
+                }
+
+                var factory = new PartFactory(this, shipPart, partIndex);
 
                 if (null == factory.descriptor || null == TargetingGroupBase)
                 {
@@ -350,9 +374,9 @@ namespace SchmooTech.XWOptUnity
         ///
         /// This will trigger bake operations if any options have been modified that would affect the baking process.
         /// </summary>
-        public GameObject CreateCraftObject()
+        public GameObject CreateCraftObject(GameObject craftBase)
         {
-            return CreateCraftObject(0);
+            return CreateCraftObject(0, craftBase);
         }
 
         /// <summary>
@@ -364,14 +388,17 @@ namespace SchmooTech.XWOptUnity
         /// Which skin to use.  This is usually based on which squadron, EG Red, Blue, Gold, Alpha, Beta, etc.
         /// If the model has no skins, this is ignored.
         /// </param>
-        public GameObject CreateCraftObject(int skin)
+        /// <param name="craftBaseOverride">
+        /// The override for the root GameObject to Instantiate for the Craft instead of the default CraftBase.
+        /// </param>
+        public GameObject CreateCraftObject(int skin, GameObject craftBaseOverride = null)
         {
             if (NeedsMainThreadBake)
             {
                 MainThreadBake();
             }
 
-            var craft = UnityEngine.Object.Instantiate(CraftBase);
+            var craft = UnityEngine.Object.Instantiate(craftBaseOverride == null ? CraftBase : craftBaseOverride);
 
             foreach (var targetGroup in targetGroups)
             {

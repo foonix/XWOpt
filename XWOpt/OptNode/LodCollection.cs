@@ -25,38 +25,30 @@ using System.Globalization;
 
 namespace SchmooTech.XWOpt.OptNode
 {
-    public class LodCollection : NodeCollection
+    public class LodCollection : BaseNode
     {
         /// <summary>
         /// Render cutoff distances associated with each LOD, in same order as Children.  (This may be in no logical order.)
         /// </summary>
         public Collection<float> MaxRenderDistance { get; } = new Collection<float>();
 
-        internal LodCollection(OptReader reader) : base()
+        internal LodCollection(OptReader reader, NodeHeader nodeHeader) : base(reader, nodeHeader)
         {
-            int lodChildCount = reader.ReadInt32();
-            int lodChildOffset = reader.ReadInt32();
-            int lodThresholdCount = reader.ReadInt32();
-            int lodThresholdOffset = reader.ReadInt32();
-
             // No idea why this would happen, but my understanding of this block is wrong if it does.
-            if (lodChildCount != lodThresholdCount)
+            if (nodeHeader.ChildCount != nodeHeader.DataCount)
             {
-                reader.logger?.Invoke(String.Format(CultureInfo.CurrentCulture, "Not the same number of LOD meshes ({0}) as LOD offsets ({1}) at {2:X}", lodChildCount, lodThresholdCount, reader.BaseStream.Position));
+                reader.logger?.Invoke(String.Format(CultureInfo.CurrentCulture, "Not the same number of LOD meshes ({0}) as LOD offsets ({1}) at {2:X}", nodeHeader.ChildCount, nodeHeader.DataCount, reader.BaseStream.Position));
             }
 
-            reader.Seek(lodChildOffset);
-            ReadChildren(reader, lodChildCount, lodChildOffset);
-
-            reader.Seek(lodThresholdOffset);
+            reader.Seek(nodeHeader.DataAddress);
             MaxRenderDistance.Clear();
-            for (int i = 0; i < lodChildCount; i++)
+            for (int i = 0; i < nodeHeader.DataCount; i++)
             {
                 float distance = reader.ReadSingle();
-                MaxRenderDistance.Add(distance);
-                // A distance of 0 represents infinate draw distance
+                // A distance of 0 represents infinite draw distance
                 // Converting to PositiveInfinity sorts it correctly.
                 distance = distance == 0 ? float.PositiveInfinity : distance;
+                MaxRenderDistance.Add(distance);
             }
         }
     }

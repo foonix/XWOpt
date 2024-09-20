@@ -111,14 +111,13 @@ namespace SchmooTech.XWOptUnity
             {
                 case 1:
                 case 2:
-                    // TIE98/Xwing98/XvT pallet 0-7 are 0xCDCD paddding. Pallet 8 is very dark, pallet 15 is normal level.
                     if (emissive)
                     {
-                        palette = 8;
+                        palette = 0;
                     }
                     else
                     {
-                        palette = 15;
+                        palette = 8;
                     }
                     break;
                 default:
@@ -137,6 +136,30 @@ namespace SchmooTech.XWOptUnity
             return palette;
         }
 
+        void UnpackColourR5G6B5(byte[] data, int offset, out float red, out float green, out float blue)
+        {
+            // Unpack RGB565, low order byte first.
+            red = (data[offset + 1] >> 3) / 31f;
+            green = (((data[offset + 1] & 7) << 3) | (data[offset] >> 5)) / 63f;
+            blue = (data[offset] & 0x1F) / 31f;
+        }
+
+        Color UnpackColourR5G6B5(byte[] data, int offset)
+        {
+            UnpackColourR5G6B5(data, offset, out var red, out var green, out var blue);
+            return new Color(red, green, blue);
+        }
+
+        void PackColourR5G6B5(Color rgb, byte[] data, int offset)
+        {
+            byte a_r = (byte)(rgb.r * 31f);
+            byte a_g = (byte)(rgb.g * 63f);
+            byte a_b = (byte)(rgb.b * 31f);
+
+            data[offset + 1] = (byte)((a_r << 3) | (a_g >> 3));
+            data[offset] = (byte)(((a_g & 0x1F) << 5) | a_b);
+        }
+
         // The lowest lighted pallet will have bright areas representing self-lighting.
         void RebalanceColorsForEmissive()
         {
@@ -145,41 +168,22 @@ namespace SchmooTech.XWOptUnity
                 if (_emissive[i] == 0 && _emissive[i + 1] == 0)
                     continue;
 
-                // Unpack RGB565, low order byte first.
-                Color albedo = new Color(
-                    (_albido[i + 1] >> 3) / 31f,
-                    (((_albido[i + 1] & 7) << 3) | (_albido[i] >> 5)) / 63f,
-                    (_albido[i] & 0x1F) / 31f
-                    );
-
-                Color emissive = new Color(
-                    (_emissive[i + 1] >> 3) / 31f,
-                    (((_emissive[i + 1] & 7) << 3) | (_emissive[i] >> 5)) / 63f,
-                    (_emissive[i] & 0x1F) / 31f
-                    );
-
-                // Lowest brightness palette has too much ambient light to make a good emissive texture.
-                // So we try to squash the ambient part without reducing brightness of the emissive features too much.
-                emissive.r = Mathf.Pow(emissive.r, emissiveExponent.Value);
-                emissive.g = Mathf.Pow(emissive.g, emissiveExponent.Value);
-                emissive.b = Mathf.Pow(emissive.b, emissiveExponent.Value);
-
-                // The material will be oversaturated if the emissive layer is simply layerd over the main texture.
-                // So reduce the albedo by the emissive part.
-                albedo -= emissive;
+                Color minLighting = UnpackColourR5G6B5(_emissive, i);
+                Color maxLighting = UnpackColourR5G6B5(_albido, i);
 
                 // Repack RGB565
-                byte a_r = (byte)(albedo.r * 31f);
-                byte a_g = (byte)(albedo.g * 63f);
-                byte a_b = (byte)(albedo.b * 31f);
-                _albido[i + 1] = (byte)((a_r << 3) | (a_g >> 3));
-                _albido[i] = (byte)(((a_g & 0x1F) << 5) | a_b);
-
-                byte e_r = (byte)(emissive.r * 31f);
-                byte e_g = (byte)(emissive.g * 63f);
-                byte e_b = (byte)(emissive.b * 31f);
-                _emissive[i + 1] = (byte)((e_r << 3) | (e_g >> 3));
-                _emissive[i] = (byte)(((e_g & 0x1F) << 5) | e_b);
+                // Quick and dirty heuristic to find emissive pixels. Must be 25% lit at maximum lighting (stops shadows being emissive),
+                // and must not change more than 4% across all light levels (stops normal non-emissive pixels)
+                if (maxLighting.maxColorComponent > 0.25f && (maxLighting - minLighting).maxColorComponent < 0.04f)
+                {
+                    PackColourR5G6B5(Color.black, _albido, i);
+                    PackColourR5G6B5(minLighting, _emissive, i);
+                }
+                else
+                {
+                    PackColourR5G6B5(maxLighting, _albido, i);
+                    PackColourR5G6B5(Color.black, _emissive, i);
+                }
             }
         }
     }

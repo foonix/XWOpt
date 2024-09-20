@@ -25,19 +25,13 @@ namespace SchmooTech.XWOpt.OptNode
 {
     public class MeshVertices<TVector3> : BaseNode
     {
-        public Collection<TVector3> Vertices { get; private set; }
+        public Collection<TVector3> Vertices { get; }
 
-        internal MeshVertices(OptReader reader) : base(reader)
+        internal MeshVertices(OptReader reader, NodeHeader nodeHeader) : base(reader, nodeHeader)
         {
-            // unknown zeros
-            reader.ReadUnknownUseValue(0, this);
-            reader.ReadUnknownUseValue(0, this);
+            reader.Seek(nodeHeader.DataAddress);
 
-            var count = reader.ReadInt32();
-
-            reader.FollowPointerToNextByte(this);
-
-            Vertices = reader.ReadVectorCollection<TVector3>(count);
+            Vertices = reader.ReadVectorCollection<TVector3>(nodeHeader.DataCount);
         }
     }
 }

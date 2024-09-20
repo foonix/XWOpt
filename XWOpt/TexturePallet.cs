@@ -35,19 +35,28 @@ namespace SchmooTech.XWOpt.OptNode
         // Number of colors for each pallet fixed in the format specs.
         const int ColorCount = 256;
 
+        readonly byte[,] eightBitPalettes = new byte[PalletCount, ColorCount];  // Colour Index for 256 Colour
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
-        readonly ushort[,] pallets = new ushort[PalletCount, ColorCount];
+        readonly ushort[,] sixteenBitPalettes = new ushort[PalletCount, ColorCount]; // R5G6B5 for 16 bit Colour
 
         public TexturePallet() { }
 
         internal TexturePallet(OptReader reader)
         {
+            for (int i = 0; i < PalletCount; i++)
+            {
+                for (int j = 0; j < ColorCount; j++)
+                {
+                    eightBitPalettes[i, j] = reader.ReadByte();
+                }
+            }
+
             // For some reason pallets 0-7 seem to be padding, 8-15 appear to be increasing brightness
             for (int i = 0; i < PalletCount; i++)
             {
                 for (int j = 0; j < ColorCount; j++)
                 {
-                    pallets[i, j] = reader.ReadUInt16();
+                    sixteenBitPalettes[i, j] = reader.ReadUInt16();
                 }
             }
         }
@@ -66,7 +75,7 @@ namespace SchmooTech.XWOpt.OptNode
         {
             BoundsCheck(palletNumber, which);
 
-            pallets[palletNumber, which] = color;
+            sixteenBitPalettes[palletNumber, which] = color;
         }
 
         [CLSCompliant(false)]
@@ -74,7 +83,7 @@ namespace SchmooTech.XWOpt.OptNode
         {
             BoundsCheck(palletNumber, which);
 
-            return pallets[palletNumber, which];
+            return sixteenBitPalettes[palletNumber, which];
         }
 
         private static void BoundsCheck(int palletNumber, int which)

@@ -27,40 +27,31 @@ namespace SchmooTech.XWOpt.OptNode
     /// <typeparam name="TVector3"></typeparam>
     public class RotationInfo<TVector3> : BaseNode
     {
-        private TVector3 offset; // Seems the same as MeshDescriptor.centerPoint
-        private TVector3 yawAxis;
-        private TVector3 rollAxis;
-        private TVector3 pitchAxis;
-
         /// <summary>
         /// For a pivoting structure, this is the point it pivots around.
         /// </summary>
-        public TVector3 Offset { get => offset; set => offset = value; }
+        public TVector3 Offset { get; set; }
         /// <summary>
         /// The vector the object yaws clockwise around IE downward facing vector
         /// </summary>
-        public TVector3 YawAxis { get => yawAxis; set => yawAxis = value; }
+        public TVector3 YawAxis { get; set; }
         /// <summary>
         /// The vector the object rolls around (clockwise = roll right) IE forward facting vector
         /// </summary>
-        public TVector3 RollAxis { get => rollAxis; set => rollAxis = value; }
+        public TVector3 RollAxis { get; set; }
         /// <summary>
         /// The vector the object pitches around (clockwise = pitch up)
         /// </summary>
-        public TVector3 PitchAxis { get => pitchAxis; set => pitchAxis = value; }
+        public TVector3 PitchAxis { get; set; }
 
-        internal RotationInfo(OptReader reader) : base(reader)
+        internal RotationInfo(OptReader reader, NodeHeader nodeHeader) : base(reader, nodeHeader)
         {
-            reader.ReadUnknownUseValue(0, this);
-            reader.ReadUnknownUseValue(0, this);
-            reader.ReadUnknownUseValue(1, this);
+            reader.Seek(nodeHeader.DataAddress);
 
-            reader.FollowPointerToNextByte(this);
-
-            offset = reader.ReadVector<TVector3>();
-            yawAxis = reader.ReadVector<TVector3>();
-            rollAxis = reader.ReadVector<TVector3>();
-            pitchAxis = reader.ReadVector<TVector3>();
+            Offset = reader.ReadVector<TVector3>();
+            YawAxis = reader.ReadVector<TVector3>();
+            RollAxis = reader.ReadVector<TVector3>();
+            PitchAxis = reader.ReadVector<TVector3>();
         }
     }
 }
