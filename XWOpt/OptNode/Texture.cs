@@ -26,25 +26,15 @@ namespace SchmooTech.XWOpt.OptNode
 {
     public class Texture : BaseNode
     {
-        // Not sure what this number means.  Seems to be the same on most textures inside of the same OPT.
-        private int group;
-        private string name;
-        private int mipLevels = 0;
-
-        private byte[] texturePalletRefs;
         private Collection<byte[]> mipPalletRefs = new Collection<byte[]>();
 
         // 16 pallets at decreasing light levels.
         // colors packed 5-6-5 blue, green, red.
         private readonly TexturePallet pallet = new TexturePallet();
-        private int width;
-        private int height;
 
-        public int Group { get => group; set => group = value; }
-        public string Name { get => name; set => name = value; }
-        public int Width { get => width; set => width = value; }
-        public int Height { get => height; set => height = value; }
-        public int MipLevels { get => mipLevels; set => mipLevels = value; }
+        public int Width { get; }
+        public int Height { get; }
+        public int MipLevels { get; }
         public Collection<byte[]> MipPalletRefs { get => mipPalletRefs; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
         [CLSCompliant(false)]
@@ -52,78 +42,56 @@ namespace SchmooTech.XWOpt.OptNode
 
         const int Rgb565ByteWidth = 2;
 
-        internal Texture(OptReader reader, int textureNameOffset) : base(reader)
+        internal Texture(OptReader reader, NodeHeader nodeHeader) : base(reader, nodeHeader)
         {
-            // TODO: Check for alpha channel 0 26 node.
-            reader.ReadUnknownUseValue(0, this);
+            reader.Seek(nodeHeader.DataAddress);
 
-            group = reader.ReadInt32();
+            var paletteOffset = reader.ReadInt32();
+            var paletteSize = reader.ReadInt32();
+            var textureSizeIncludingMips = reader.ReadInt32();
+            var completeSize = reader.ReadInt32();
+            
+            Width = reader.ReadInt32();
+            Height = reader.ReadInt32();
 
-            var palletAddressOffset = reader.ReadInt32();
+            var expectedSize = Height * Width;
 
-            reader.Seek(textureNameOffset);
-            name = reader.ReadString(9);
+            var finalPaletteOffset = paletteOffset;
 
-            reader.SeekShouldPointHere(palletAddressOffset, this);
+            if (paletteSize != 0)
+            {
+                if (expectedSize == textureSizeIncludingMips)
+                {
+                    finalPaletteOffset = nodeHeader.DataAddress + 24 + completeSize;
+                }
+                else
+                {
+                    finalPaletteOffset = nodeHeader.DataAddress + 24 + expectedSize;
+                }
+            }
 
-            // Skip pallet data for now to get pallet references.
-            var palletOffset = reader.ReadInt32();
+            var nextMipImageSize = Width * Height / 4;
+            MipLevels = 1;
+            while (nextMipImageSize != 0)
+            {
+                MipLevels++;
+                nextMipImageSize /= 4;
+            }
 
-            reader.ReadUnknownUseValue(0, this);
+            var mipSize = Width * Height;
 
-            int size = reader.ReadInt32();
-            int sizeWithMips = reader.ReadInt32();
-
-            width = reader.ReadInt32();
-            height = reader.ReadInt32();
-
-            texturePalletRefs = new byte[size];
-            reader.Read(texturePalletRefs, 0, size);
-
-            // Read Mip data
-            // Not sure we need these.
-            int nextMipWidth = width / 2, nextMipHeight = height / 2;
-            int mipSize = nextMipWidth * nextMipHeight;
-            int mipDataToRead = sizeWithMips - size;
-            while (mipDataToRead >= mipSize && mipSize > 0)
+            for (var mip = 0; mip < MipLevels; mip++)
             {
                 byte[] nextMipRefs = new byte[mipSize];
                 reader.Read(nextMipRefs, 0, mipSize);
                 mipPalletRefs.Add(nextMipRefs);
-                mipLevels++;
-
-                nextMipWidth = nextMipWidth / 2;
-                nextMipHeight = nextMipHeight / 2;
-                mipDataToRead -= mipSize;
-                mipSize = nextMipWidth * nextMipHeight;
             }
 
-            // Now go back and find the texture pallet.
             // A few files have invalid palletOffsets.
-            if (palletOffset > reader.globalOffset)
+            if (finalPaletteOffset > reader.globalOffset)
             {
-                pallet = reader.ReadPalette(palletOffset);
+                pallet = reader.ReadPalette(finalPaletteOffset);
             }
-        }
-
-        /// <summary>
-        /// Generates RGB565 image from pallet and color data.
-        /// </summary>
-        /// <param name="palletNumber">Which pallet to use when generating the image (0-15)</param>
-        /// <returns>byte[] containing the image, in bottom left to top right order.</returns>
-        public byte[] ToRgb565(int palletNumber)
-        {
-            var img = new Byte[texturePalletRefs.Length * 2];
-
-            for (int i = 0; i < texturePalletRefs.Length; i++)
-            {
-                ushort color = pallet[palletNumber, texturePalletRefs[i]];
-
-                img[i * 2] = (byte)(color & 0xFF);  // low order byte
-                img[(i * 2) + 1] = (byte)(color >> 8);  // high order byte
-            }
-
-            return img;
         }
 
         /// <summary>
@@ -148,35 +116,27 @@ namespace SchmooTech.XWOpt.OptNode
             {
                 // positive wrap
                 int tY = (targetY + y) % targetHeight;
-                int sY = (sourceY + y) % height;
+                int sY = (sourceY + y) % Height;
                 // negative wrap
                 tY = tY < 0 ? targetHeight + tY : tY;
-                sY = sY < 0 ? height + sY : sY;
+                sY = sY < 0 ? Height + sY : sY;
 
                 for (int x = 0; x < sizeX; x++)
                 {
                     // positive wrap
                     int tX = (targetX + x) % targetWidth;
-                    int sX = (sourceX + x) % width;
+                    int sX = (sourceX + x) % Width;
                     // negative wrap
                     tX = tX < 0 ? targetWidth + tX : tX;
-                    sX = sX < 0 ? width + sX : sX;
+                    sX = sX < 0 ? Width + sX : sX;
 
                     // target byte
                     int t = (Rgb565ByteWidth * tX) + (Rgb565ByteWidth * targetWidth * tY);
 
                     // source palette ref
-                    int sr = sX + (width * sY);
+                    int sr = sX + (Width * sY);
 
-                    ushort color;
-                    if (mipLevel > 0)
-                    {
-                        color = pallet[palletNumber, mipPalletRefs[mipLevel - 1][sr]];
-                    }
-                    else
-                    {
-                        color = pallet[palletNumber, texturePalletRefs[sr]];
-                    }
+                    ushort color = pallet[palletNumber, mipPalletRefs[mipLevel][sr]];
 
                     target[t] = (byte)(color & 0xFF);  // low order byte
                     target[t + 1] = (byte)(color >> 8);  // high order byte

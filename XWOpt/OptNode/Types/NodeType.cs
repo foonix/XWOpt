@@ -21,9 +21,35 @@
 
 namespace SchmooTech.XWOpt.OptNode.Types
 {
-    public enum Major
+    public enum NodeType
     {
-        Generic = 0,
+        Separator = 0,
+        IndexedFaceSet = 1,
+        Transform = 2,
+        VertexPosition = 3,
+        Translation = 4,
+        Rotation = 5,
+        Scale = 6,
+        UseTexture = 7,
+        Def = 8,
+        Material = 9,
+        MaterialBinding = 10,
+        VertexNormal = 11,
+        VertexNormalBinding = 12,
+        TextureVertex = 13,
+        TextureVertexBinding = 14,
+        QuadMesh = 15,
+        FaceSet = 16,
+        TriangleStripSet = 17,
+        Group = 18,
+        BaseColour = 19,
         Texture = 20,
+        MeshLod = 21,
+        Hardpoint = 22,
+        Pivot = 23,
+        CamoSwitch = 24,
+        ComponentInfo = 25,
+        EngineGlow = 28,
+        Unknown = 0xff,
     }
 }

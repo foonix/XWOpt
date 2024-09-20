@@ -66,8 +66,8 @@ namespace SchmooTech.XWOpt.OptNode
         public PartType PartType { get; set; }
 
         /// <summary>
-        /// 0,1,4,5,8,9 = Mesh continues in straight line when destroyed 2,3,6,10 = Mesh breaks off and explodes 7 = destructible parts
-        /// Looks like bitmask but not sure
+        /// 0,1,4,5,8,9 = Mesh continues in straight line when destroyed 2,3,6,10 = Mesh breaks off and explodes
+        /// Bitmask. 2 is Destructable.
         /// </summary>
         public int ExplosionType { get; set; }
 
@@ -102,13 +102,9 @@ namespace SchmooTech.XWOpt.OptNode
         /// </summary>
         public TVector3 TargetPoint { get; set; }
 
-        internal PartDescriptor(OptReader reader) : base(reader)
+        internal PartDescriptor(OptReader reader, NodeHeader nodeHeader) : base(reader, nodeHeader)
         {
-            reader.ReadUnknownUseValue(0, this);
-            reader.ReadUnknownUseValue(0, this);
-            reader.ReadUnknownUseValue(1, this);
-
-            reader.FollowPointerToNextByte(this);
+            reader.Seek(nodeHeader.DataAddress);
 
             PartType = (PartType)reader.ReadUInt32();
             ExplosionType = reader.ReadInt32();
