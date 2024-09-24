@@ -33,21 +33,17 @@ namespace SchmooTech.XWOptUnity
     {
         SeparatorNode _lodNode;
         readonly int _index;
-        readonly float _threshold;
+        float _threshold;
         PartFactory Part { get; set; }
         List<Mesh> skinSpecificSubmeshes = new List<Mesh>();
 
         /// <summary>
         /// Fudge factor for increasing LOD cutover distance based on increased resolution and improved
         /// rendering technology on modern computers.
-        ///
-        /// 640x480 -> 1920x1080 = ~3x increased resolution
-        ///
-        /// Add additional subjective multipliers based on anti-aliasing (4x) and texture filtering (4x).
-        ///
-        /// 3 * (4+4)
+        /// 
+        /// Approximately x4 increased resolution, x4 texture anti-aliasing, on a camera with FOV set to 60 vertical
         /// </summary>
-        public const float DetailImprovementFudgeFactor = 24f;
+        public const float DetailImprovementFudgeFactor = 60f * 16f;
 
         internal LodFactory(PartFactory part, SeparatorNode lodNode, int index, float threshold)
         {
@@ -57,8 +53,7 @@ namespace SchmooTech.XWOptUnity
 
             if (threshold > 0 && threshold < float.PositiveInfinity)
             {
-                // OPT LOD thresholds are based on distance. Unity is based on screen height.
-                _threshold = (float)(1 / (DetailImprovementFudgeFactor * Math.Atan(1 / threshold)));
+                _threshold = threshold;
             }
             else
             {
@@ -203,6 +198,15 @@ namespace SchmooTech.XWOptUnity
                 uv2 = meshUV2.ToArray(),
                 uv3 = meshUV3.ToArray(),
             };
+
+            if (_threshold != 0f)
+            {
+                // OPT LOD thresholds are based on distance. Unity is based on screen height.
+                mesh.RecalculateBounds();
+                var bounds = mesh.bounds;
+                var screenAngle = Mathf.Atan(bounds.max.magnitude / _threshold);
+                _threshold = screenAngle / DetailImprovementFudgeFactor;
+            }
 
             return mesh;
         }
