@@ -19,25 +19,46 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-namespace SchmooTech.XWOpt.OptNode.Types
+using SchmooTech.XWOpt.OptNode.Types;
+
+namespace SchmooTech.XWOpt.OptNode
 {
-    public enum GenericMinor
+    public class NodeHeader
     {
-        Branch = 0,
-        FaceList = 1,
-        MainJump = 2,
-        MeshVertex = 3,
-        Info = 4,
-        TextureReferenceByName = 7,
-        VertexNormal = 11,
-        TextureVertex = 13,
-        TextureHeader = 20,
-        MeshLod = 21,
-        Hardpoint = 22,
-        Transform = 23,
-        SkinSelector = 24,
-        MeshDescriptor = 25,
-        EngineGlow = 28,
-        Unknown = 0xff,
+        public int NameOffset { get; }
+        public NodeType NodeType { get; }
+
+        public int ChildCount { get; }
+        public int ChildAddressTable { get; }
+
+        public int DataCount { get; }
+        public int DataAddress { get; }
+
+        public string Name { get; }
+        public BaseNode Parent { get; }
+
+        internal NodeHeader(OptReader reader, BaseNode parent) 
+        {
+            Parent = parent;
+
+            NameOffset = reader.ReadInt32();
+            NodeType = (NodeType)reader.ReadInt32();
+
+            ChildCount = reader.ReadInt32();
+            ChildAddressTable = reader.ReadInt32();
+
+            DataCount = reader.ReadInt32();
+            DataAddress = reader.ReadInt32();
+
+            if (NameOffset != 0)
+            {
+                reader.Seek(NameOffset);
+                Name = reader.ReadString(100);
+            }
+            else
+            {
+                Name = string.Empty;
+            }
+        }
     }
 }

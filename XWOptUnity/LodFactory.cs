@@ -31,25 +31,21 @@ namespace SchmooTech.XWOptUnity
 {
     class LodFactory : IBakeable
     {
-        NodeCollection _lodNode;
+        SeparatorNode _lodNode;
         readonly int _index;
-        readonly float _threshold;
+        float _threshold;
         PartFactory Part { get; set; }
-        Dictionary<int, Mesh> skinSpecificSubmeshes = new Dictionary<int, Mesh>();
+        List<Mesh> skinSpecificSubmeshes = new List<Mesh>();
 
         /// <summary>
         /// Fudge factor for increasing LOD cutover distance based on increased resolution and improved
         /// rendering technology on modern computers.
-        ///
-        /// 640x480 -> 1920x1080 = ~3x increased resolution
-        ///
-        /// Add additional subjective multipliers based on anti-aliasing (4x) and texture filtering (4x).
-        ///
-        /// 3 * (4+4)
+        /// 
+        /// Approximately x4 increased resolution, x4 texture anti-aliasing, on a camera with FOV set to 60 vertical
         /// </summary>
-        public const float DetailImprovementFudgeFactor = 24f;
+        public const float DetailImprovementFudgeFactor = 60f * 16f;
 
-        internal LodFactory(PartFactory part, NodeCollection lodNode, int index, float threshold)
+        internal LodFactory(PartFactory part, SeparatorNode lodNode, int index, float threshold)
         {
             Part = part;
             _lodNode = lodNode;
@@ -57,8 +53,7 @@ namespace SchmooTech.XWOptUnity
 
             if (threshold > 0 && threshold < float.PositiveInfinity)
             {
-                // OPT LOD thresholds are based on distance. Unity is based on screen height.
-                _threshold = (float)(1 / (DetailImprovementFudgeFactor * Math.Atan(1 / threshold)));
+                _threshold = threshold;
             }
             else
             {
@@ -161,7 +156,7 @@ namespace SchmooTech.XWOptUnity
                         {
                             Debug.LogError(string.Format(CultureInfo.CurrentCulture, "UV {0}/{4} out of bound {1:X} {2} {3} ", vt.uvId, faceList.OffsetInFile, i, j, optUV.Vertices.Count));
                         }
-                        meshVerts.Add(optVerts.Vertices[vt.vId]);
+                        meshVerts.Add(optVerts.Vertices[vt.vId] - Part.rotationInfo.Offset);
                         meshNorms.Add(normal.normalized);
 
                         // translate uv to atlas space
@@ -204,6 +199,15 @@ namespace SchmooTech.XWOptUnity
                 uv3 = meshUV3.ToArray(),
             };
 
+            if (_threshold != 0f)
+            {
+                // OPT LOD thresholds are based on distance. Unity is based on screen height.
+                mesh.RecalculateBounds();
+                var bounds = mesh.bounds;
+                var screenAngle = Mathf.Atan(bounds.max.magnitude / _threshold);
+                _threshold = screenAngle / DetailImprovementFudgeFactor;
+            }
+
             return mesh;
         }
 
@@ -227,13 +231,14 @@ namespace SchmooTech.XWOptUnity
             for (int skin = 0; skin < skinCount; skin++)
             {
                 var subMeshes = new List<CombineInstance>();
-
                 foreach (var assoc in WalkTextureAssociations(skin))
                 {
-                    subMeshes.Add(new CombineInstance()
+                    var combineInstance = new CombineInstance()
                     {
                         mesh = MakeMesh(assoc.faceList, assoc.textureName)
-                    });
+                    };
+
+                    subMeshes.Add(combineInstance);
                 }
 
                 var mesh = new Mesh();
@@ -241,7 +246,7 @@ namespace SchmooTech.XWOptUnity
                 mesh.RecalculateBounds();
                 mesh.name = ToString() + "_skin" + skin;
 
-                skinSpecificSubmeshes[skin] = mesh;
+                skinSpecificSubmeshes.Add(mesh);
             }
         }
 
@@ -271,11 +276,10 @@ namespace SchmooTech.XWOptUnity
             lodObj.AddComponent<MeshRenderer>();
             Helpers.AttachTransform(parent, lodObj);
 
-            // Lower LODs may not have skin specific textures even if higher LODs do.
-            if (skin >= skinSpecificSubmeshes.Count)
-                skin = 0;
+            var skinMeshSwitch = lodObj.AddComponent<SkinMeshSwitch>();
+            skinMeshSwitch.Initialise(skinSpecificSubmeshes.ToArray());
 
-            lodObj.GetComponent<MeshFilter>().sharedMesh = skinSpecificSubmeshes[skin];
+            skinMeshSwitch.SwitchSkin(skin);
             lodObj.GetComponent<MeshRenderer>().sharedMaterial = Part.Craft.TextureAtlas.Material;
 
             return new LOD(_threshold, new Renderer[] { lodObj.GetComponent<MeshRenderer>() });
@@ -284,7 +288,7 @@ namespace SchmooTech.XWOptUnity
         /// <summary>
         /// Which texture to use for which submesh
         /// </summary>
-        struct TextureMeshAssociation
+        class TextureMeshAssociation
         {
             public string textureName;
             public FaceList<Vector3> faceList;
@@ -296,61 +300,64 @@ namespace SchmooTech.XWOptUnity
             // them besides that the texture preceeds the mesh in this list.
             // So keep track of the last mesh or mesh reference we've seen and apply it to the next mesh.
             // If there is more than one texture preceding a mesh, the last one must be used.
-            string previousTexture = null;
+            var previousTexture = new TextureMeshAssociation
+            {
+                faceList = null,
+                textureName = null
+            };
 
-            // Workaround for lambda shuttle.  Fuselage parts have a weird sub-part wrapper.
-            var SearchedNodes = new List<BaseNode>();
             foreach (var child in _lodNode.Children)
             {
-                switch (child)
+                foreach (var assoc in WalkTextureAssociations(child, skin, previousTexture))
                 {
-                    case NamedNodeCollection named:
-                        SearchedNodes.AddRange((named.Children[0] as NodeCollection).Children);
-                        break;
-                    default:
-                        SearchedNodes.Add(child);
-                        break;
+                    yield return assoc;
                 }
             }
+        }
 
-            foreach (var child in SearchedNodes)
+        IEnumerable<TextureMeshAssociation> WalkTextureAssociations(BaseNode child, int skin, TextureMeshAssociation previousTexture)
+        {
+            switch (child)
             {
-                switch (child)
+                case XWOpt.OptNode.Texture t:
+                    previousTexture.textureName = t.Name;
+                    break;
+                case TextureReferenceByName t:
+                    previousTexture.textureName = t.TextureName;
+                    break;
+                case SkinCollection selector:
+                    // Workaround: Some training platform parts have varying number of skins.
+                    int usedSkin = skin % selector.Children.Count;
+                    switch (selector.Children[usedSkin])
+                    {
+                        case XWOpt.OptNode.Texture t:
+                            previousTexture.textureName = t.Name;
+                            break;
+                        case TextureReferenceByName t:
+                            previousTexture.textureName = t.TextureName;
+                            break;
+                    }
+                    yield break;
+                case FaceList<Vector3> f:
+                    // Some meshes are not preceeded by a texture.  In this case use a global default texture.
+                    if (null == previousTexture.textureName)
+                    {
+                        previousTexture.textureName = "Tex00000";
+                    }
+
+                    previousTexture.faceList = f;
+
+                    yield return previousTexture;
+                    previousTexture.textureName = null;
+
+                    break;
+            }
+
+            foreach (var subNode in child.Children)
+            {
+                foreach (var assoc in WalkTextureAssociations(subNode, skin, previousTexture))
                 {
-                    case XWOpt.OptNode.Texture t:
-                        previousTexture = t.Name;
-                        break;
-                    case TextureReferenceByName t:
-                        previousTexture = t.Name;
-                        break;
-                    case SkinCollection selector:
-                        // Workaround: Some training platform parts have varying number of skins.
-                        int usedSkin = skin % selector.Children.Count;
-                        switch (selector.Children[usedSkin])
-                        {
-                            case XWOpt.OptNode.Texture t:
-                                previousTexture = t.Name;
-                                break;
-                            case TextureReferenceByName t:
-                                previousTexture = t.Name;
-                                break;
-                        }
-                        break;
-                    case FaceList<Vector3> f:
-                        // Some meshes are not preceeded by a texture.  In this case use a global default texture.
-                        if (null == previousTexture)
-                        {
-                            previousTexture = "Tex00000";
-                        }
-
-                        TextureMeshAssociation association;
-                        association.textureName = previousTexture;
-                        association.faceList = f;
-
-                        yield return association;
-
-                        previousTexture = null;
-                        break;
+                    yield return assoc;
                 }
             }
         }
