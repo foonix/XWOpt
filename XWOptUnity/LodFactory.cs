@@ -34,22 +34,18 @@ namespace SchmooTech.XWOptUnity
         SeparatorNode _lodNode;
         readonly int _index;
         float _threshold;
+        Bounds _bounds;
         PartFactory Part { get; set; }
         List<Mesh> skinSpecificSubmeshes = new List<Mesh>();
 
-        /// <summary>
-        /// Fudge factor for increasing LOD cutover distance based on increased resolution and improved
-        /// rendering technology on modern computers.
-        /// 
-        /// Approximately x4 increased resolution, x4 texture anti-aliasing, on a camera with FOV set to 60 vertical
-        /// </summary>
-        public const float DetailImprovementFudgeFactor = 60f * 16f;
+        public const float DetailImprovementFudgeFactor = Mathf.PI / 3f;
 
-        internal LodFactory(PartFactory part, SeparatorNode lodNode, int index, float threshold)
+        internal LodFactory(PartFactory part, SeparatorNode lodNode, Bounds bounds, int index, float threshold)
         {
             Part = part;
             _lodNode = lodNode;
             _index = index;
+            _bounds = bounds;
 
             if (threshold > 0 && threshold < float.PositiveInfinity)
             {
@@ -58,6 +54,15 @@ namespace SchmooTech.XWOptUnity
             else
             {
                 _threshold = 0;
+            }
+
+            if (_threshold != 0f)
+            {
+                var distance =  (1f / _threshold) * (1600f / 65536f);
+
+                // OPT LOD thresholds are based on distance. Unity is based on screen height.
+                var screenAngle = Mathf.Atan(_bounds.extents.magnitude / distance);
+                _threshold = screenAngle / DetailImprovementFudgeFactor;
             }
         }
 
@@ -198,15 +203,6 @@ namespace SchmooTech.XWOptUnity
                 uv2 = meshUV2.ToArray(),
                 uv3 = meshUV3.ToArray(),
             };
-
-            if (_threshold != 0f)
-            {
-                // OPT LOD thresholds are based on distance. Unity is based on screen height.
-                mesh.RecalculateBounds();
-                var bounds = mesh.bounds;
-                var screenAngle = Mathf.Atan(bounds.max.magnitude / _threshold);
-                _threshold = screenAngle / DetailImprovementFudgeFactor;
-            }
 
             return mesh;
         }

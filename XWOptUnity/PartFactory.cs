@@ -97,7 +97,7 @@ namespace SchmooTech.XWOptUnity
 
                 if (lodNode.Children[i] is SeparatorNode branch)
                 {
-                    _lods.Add(new LodFactory(this, branch, newLodIndex, distance));
+                    _lods.Add(new LodFactory(this, branch, new Bounds(descriptor.HitboxCenterPoint, descriptor.HitboxSpan), newLodIndex, distance));
                     newLodIndex++;
                 }
                 else

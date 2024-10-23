@@ -45,9 +45,6 @@ namespace SchmooTech.XWOpt.OptNode
             for (int i = 0; i < nodeHeader.DataCount; i++)
             {
                 float distance = reader.ReadSingle();
-                // A distance of 0 represents infinite draw distance
-                // Converting to PositiveInfinity sorts it correctly.
-                distance = distance == 0 ? float.PositiveInfinity : distance;
                 MaxRenderDistance.Add(distance);
             }
         }
