@@ -71,10 +71,15 @@ namespace SchmooTech.XWOptUnity
 
             // Fetch ship part top level data
             descriptor = ShipPart.Children.OfType<PartDescriptor<Vector3>>().First();
-            rotationInfo = ShipPart.Children.OfType<RotationInfo<Vector3>>().First();
+            rotationInfo = ShipPart.Children.OfType<RotationInfo<Vector3>>().FirstOrDefault();
             verts = ShipPart.OfType<MeshVertices<Vector3>>().First();
             vertUV = ShipPart.OfType<VertexUV<Vector2>>().First();
             vertNormals = ShipPart.OfType<VertexNormals<Vector3>>().First();
+
+            if (rotationInfo == null)
+            {
+                rotationInfo = new RotationInfo<Vector3>(Vector3.up, Vector3.right, Vector3.forward);
+            }
 
             // All meshes are contained inside of a MeshLod
             // There is only one MeshLod per part.

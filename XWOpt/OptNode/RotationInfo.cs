@@ -53,5 +53,12 @@ namespace SchmooTech.XWOpt.OptNode
             RollAxis = reader.ReadVector<TVector3>();
             PitchAxis = reader.ReadVector<TVector3>();
         }
+
+        public RotationInfo(TVector3 up, TVector3 right, TVector3 forwards) : base(string.Empty, Types.NodeType.Pivot)
+        {
+            YawAxis = up;
+            RollAxis = forwards;
+            PitchAxis = right;
+        }
     }
 }
