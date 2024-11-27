@@ -25,21 +25,13 @@ namespace SchmooTech.XWOpt.OptNode
 {
     public class VertexNormals<TVector3> : BaseNode
     {
-        private Collection<TVector3> normals;
+        public Collection<TVector3> Normals { get; private set; }
 
-        public Collection<TVector3> Normals { get => normals; }
-
-        internal VertexNormals(OptReader reader) : base(reader)
+        internal VertexNormals(OptReader reader, NodeHeader nodeHeader) : base(reader, nodeHeader)
         {
-            // unknown zeros
-            reader.ReadUnknownUseValue(0, this);
-            reader.ReadUnknownUseValue(0, this);
+            reader.Seek(nodeHeader.DataAddress);
 
-            var count = reader.ReadInt32();
-
-            reader.FollowPointerToNextByte(this);
-
-            normals = reader.ReadVectorCollection<TVector3>(count);
+            Normals = reader.ReadVectorCollection<TVector3>(nodeHeader.DataCount);
         }
     }
 }

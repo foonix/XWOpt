@@ -33,12 +33,10 @@ namespace SchmooTech.XWOpt.OptNode
         public TVector3 Y { get; set; }
         public TVector3 Z { get; set; }
 
-        internal EngineGlow(OptReader reader) : base(reader)
+        internal EngineGlow(OptReader reader, NodeHeader nodeHeader) : base(reader, nodeHeader)
         {
-            reader.ReadUnknownUseValue(0, this);
-            reader.ReadUnknownUseValue(0, this);
-            reader.ReadUnknownUseValue(1, this);
-            reader.FollowPointerToNextByte(this);
+            reader.Seek(nodeHeader.DataAddress);
+            
             reader.ReadUnknownUseValue(0, this);
 
             InnerColor = reader.ReadInt32();

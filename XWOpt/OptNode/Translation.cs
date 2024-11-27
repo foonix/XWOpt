@@ -19,11 +19,17 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-namespace SchmooTech.XWOpt.OptNode.Types
+namespace SchmooTech.XWOpt.OptNode
 {
-    public enum TextureMinor
+    public class Translation<TVector3> : BaseNode
     {
-        Texture = 0,
-        TextureWithAlpha = 1,
+        public TVector3 TranslationVector { get; private set; }
+
+        internal Translation(OptReader reader, NodeHeader nodeHeader) : base(reader, nodeHeader)
+        {
+            reader.Seek(nodeHeader.DataAddress);
+
+            TranslationVector = reader.ReadVector<TVector3>();
+        }
     }
 }

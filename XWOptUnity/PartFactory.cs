@@ -19,18 +19,18 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-using SchmooTech.XWOpt.OptNode;
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using SchmooTech.XWOpt.OptNode;
 using UnityEngine;
 
 namespace SchmooTech.XWOptUnity
 {
     internal class PartFactory
     {
-        internal NodeCollection ShipPart { get; set; }
+        internal SeparatorNode ShipPart { get; set; }
         internal CraftFactory Craft { get; set; }
+        internal int PartIndex { get; set; }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal bool CreateChildTarget
@@ -62,18 +62,24 @@ namespace SchmooTech.XWOptUnity
         HardpointFactory hardpointFactory;
         TargetPointFactory targetPoint = null;
 
-        internal PartFactory(CraftFactory craft, NodeCollection shipPart)
+        internal PartFactory(CraftFactory craft, SeparatorNode shipPart, int partIndex)
         {
             Craft = craft;
             ShipPart = shipPart;
+            PartIndex = partIndex;
             hardpointFactory = new HardpointFactory(craft);
 
             // Fetch ship part top level data
             descriptor = ShipPart.Children.OfType<PartDescriptor<Vector3>>().First();
-            rotationInfo = ShipPart.Children.OfType<RotationInfo<Vector3>>().First();
+            rotationInfo = ShipPart.Children.OfType<RotationInfo<Vector3>>().FirstOrDefault();
             verts = ShipPart.OfType<MeshVertices<Vector3>>().First();
             vertUV = ShipPart.OfType<VertexUV<Vector2>>().First();
             vertNormals = ShipPart.OfType<VertexNormals<Vector3>>().First();
+
+            if (rotationInfo == null)
+            {
+                rotationInfo = new RotationInfo<Vector3>(Vector3.up, Vector3.right, Vector3.forward);
+            }
 
             // All meshes are contained inside of a MeshLod
             // There is only one MeshLod per part.
@@ -89,16 +95,19 @@ namespace SchmooTech.XWOptUnity
                 // Out of order LODs are probably broken.  See TIE98 CAL.OPT.
                 // If this distance is greater than the previous distance (smaller number means greater render distance),
                 // then this LOD is occluded by the previous LOD.
-                if (distance > 0 && i > 0 && distance > lodNode.MaxRenderDistance[i - 1]) continue;
-
-                if (lodNode.Children[i] is NodeCollection branch)
+                if (distance > 0 && i > 0 && distance > lodNode.MaxRenderDistance[i - 1])
                 {
-                    _lods.Add(new LodFactory(this, branch, newLodIndex, distance));
+                    continue;
+                }
+
+                if (lodNode.Children[i] is SeparatorNode branch)
+                {
+                    _lods.Add(new LodFactory(this, branch, new Bounds(descriptor.HitboxCenterPoint, descriptor.HitboxSpan), newLodIndex, distance));
                     newLodIndex++;
                 }
                 else
                 {
-                    Debug.LogError("Skipping LOD" + newLodIndex + " as it is not a NodeCollection");
+                    Debug.LogError("Skipping LOD" + newLodIndex + " as it is not a Separator Node");
                 }
             }
         }
@@ -129,7 +138,7 @@ namespace SchmooTech.XWOptUnity
             // Generate hardpoints
             foreach (var hardpoint in ShipPart.OfType<Hardpoint<Vector3>>())
             {
-                hardpointFactory.MakeHardpoint(partObj, hardpoint, descriptor);
+                hardpointFactory.MakeHardpoint(partObj, hardpoint, descriptor, rotationInfo);
             }
 
             if (null != targetPoint)
@@ -137,9 +146,9 @@ namespace SchmooTech.XWOptUnity
                 Helpers.AttachTransform(partObj, targetPoint.CreateTargetPoint(), descriptor.HitboxCenterPoint);
             }
 
-            Helpers.AttachTransform(parent, partObj);
+            Helpers.AttachTransform(parent, partObj, rotationInfo.Offset);
 
-            Craft.ProcessPart?.Invoke(partObj, descriptor, rotationInfo);
+            Craft.ProcessPart?.Invoke(PartIndex, partObj, descriptor, rotationInfo);
 
             return partObj;
         }

@@ -140,14 +140,10 @@ namespace SchmooTech.XWOpt
         {
             foreach (var node in RootNodes)
             {
-                yield return node;
-
-                if (node is NodeCollection branch)
+                // Recursely walk the hierarchy - the first item is always node, then any children
+                foreach (var nodeItem in node)
                 {
-                    foreach (var subNode in branch)
-                    {
-                        yield return subNode;
-                    }
+                    yield return nodeItem;
                 }
             }
         }

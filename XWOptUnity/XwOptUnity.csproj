@@ -61,6 +61,7 @@
     <Compile Include="LodFactory.cs" />
     <Compile Include="PartFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SkinMeshSwitch.cs" />
     <Compile Include="TargetGroupFactory.cs" />
     <Compile Include="TargetPointFactory.cs" />
     <Compile Include="TextureAtlas.cs" />

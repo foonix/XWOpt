@@ -59,23 +59,22 @@ namespace SchmooTech.XWOpt.OptNode
 
     public class Hardpoint<TVector3> : BaseNode
     {
-        private WeaponType weaponType;
-        private TVector3 location;
+        public WeaponType WeaponType { get; }
+        public TVector3 Location { get; }
 
-        public WeaponType WeaponType { get => weaponType; set => weaponType = value; }
-        public TVector3 Location { get => location; set => location = value; }
-
-        internal Hardpoint(OptReader reader) : base(reader)
+        internal Hardpoint(OptReader reader, NodeHeader nodeHeader) : base(reader, nodeHeader)
         {
-            reader.ReadUnknownUseValue(0, this);
-            reader.ReadUnknownUseValue(0, this);
-            reader.ReadUnknownUseValue(1, this);
+            reader.Seek(nodeHeader.DataAddress);
 
-            reader.FollowPointerToNextByte(this);
+            WeaponType = (WeaponType)reader.ReadUInt32();
 
-            weaponType = (WeaponType)reader.ReadUInt32();
+            Location = reader.ReadVector<TVector3>();
+        }
 
-            location = reader.ReadVector<TVector3>();
+        public Hardpoint(string name, WeaponType type, TVector3 position) : base(name, Types.NodeType.Hardpoint)
+        {
+            WeaponType = type;
+            Location = position;
         }
     }
 }

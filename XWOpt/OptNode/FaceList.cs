@@ -32,15 +32,12 @@ namespace SchmooTech.XWOpt.OptNode
         private Collection<TVector3> faceNormals;
         private Collection<TextureBasisVectors<TVector3>> basisVectors;
 
-        private int edgeCount;
-
         [SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
         private Collection<CoordinateReferenceTuple> vertexRef;
         [SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
         private Collection<CoordinateReferenceTuple> edgeRef;
         [SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
         private Collection<CoordinateReferenceTuple> uVRef;
-        private int count;
 
         [SuppressMessage("Microsoft.Performance", "CA1814:PreferJaggedArraysOverMultidimensional", MessageId = "Member")]
         public Collection<CoordinateReferenceTuple> VertexRef { get => vertexRef; }
@@ -52,25 +49,25 @@ namespace SchmooTech.XWOpt.OptNode
         public Collection<CoordinateReferenceTuple> VertexNormalRef { get => vertexNormalRef; }
         public Collection<TVector3> FaceNormals { get => faceNormals; }
         public Collection<TextureBasisVectors<TVector3>> BasisVectors { get => basisVectors; }
-        public int Count { get => count; set => count = value; }
-        public int EdgeCount { get => edgeCount; set => edgeCount = value; }
+        public int Count { get; }
+        public int EdgeCount { get; }
+        public int FaceListSize { get; }
 
-        internal FaceList(OptReader reader) : base(reader)
+        internal FaceList(OptReader reader, NodeHeader nodeHeader) : base(reader, nodeHeader)
         {
-            // unknown zeros
-            reader.ReadUnknownUseValue(0, this);
-            reader.ReadUnknownUseValue(0, this);
+            reader.Seek(nodeHeader.DataAddress);
+            Count = nodeHeader.DataCount;
 
-            count = reader.ReadInt32();
-            reader.FollowPointerToNextByte(this);
-            edgeCount = reader.ReadInt32();
+            // read the IFS Size
+            FaceListSize = reader.ReadInt32();
 
+            // Next up is the DataCount * Faces, size 64
             vertexRef = new Collection<CoordinateReferenceTuple>();
             edgeRef = new Collection<CoordinateReferenceTuple>();
             uVRef = new Collection<CoordinateReferenceTuple>();
             vertexNormalRef = new Collection<CoordinateReferenceTuple>();
 
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < nodeHeader.DataCount; i++)
             {
                 vertexRef.Add(new CoordinateReferenceTuple(reader));
                 edgeRef.Add(new CoordinateReferenceTuple(reader));
@@ -78,10 +75,12 @@ namespace SchmooTech.XWOpt.OptNode
                 vertexNormalRef.Add(new CoordinateReferenceTuple(reader));
             }
 
-            faceNormals = reader.ReadVectorCollection<TVector3>(count);
+            // Next up is the DataCount * Face Normals, size 12
+            faceNormals = reader.ReadVectorCollection<TVector3>(nodeHeader.DataCount);
 
+            // Next up is the DataCount * Texture Basis Vectors, size 24
             basisVectors = new Collection<TextureBasisVectors<TVector3>>();
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < nodeHeader.DataCount; i++)
             {
                 // Edge case: TIE98 CORVTA.OPT is missing a float at EOF.
                 try

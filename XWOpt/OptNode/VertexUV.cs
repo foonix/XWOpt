@@ -25,21 +25,13 @@ namespace SchmooTech.XWOpt.OptNode
 {
     public class VertexUV<TVector2> : BaseNode
     {
-        private Collection<TVector2> vertices;
+        public Collection<TVector2> Vertices { get; }
 
-        public Collection<TVector2> Vertices { get => vertices; }
-
-        internal VertexUV(OptReader reader) : base(reader)
+        internal VertexUV(OptReader reader, NodeHeader nodeHeader) : base(reader, nodeHeader)
         {
-            // unknown zeros
-            reader.ReadUnknownUseValue(0, this);
-            reader.ReadUnknownUseValue(0, this);
+            reader.Seek(nodeHeader.DataAddress);
 
-            var count = reader.ReadInt32();
-
-            reader.FollowPointerToNextByte(this);
-
-            vertices = reader.ReadVectorCollection<TVector2>(count);
+            Vertices = reader.ReadVectorCollection<TVector2>(nodeHeader.DataCount);
         }
     }
 }

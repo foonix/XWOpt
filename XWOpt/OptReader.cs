@@ -26,7 +26,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
-using System.Reflection;
 using System.Text;
 
 namespace SchmooTech.XWOpt
@@ -62,32 +61,6 @@ namespace SchmooTech.XWOpt
             this.logger = logger;
         }
 
-        internal List<BaseNode> ReadChildren(object context)
-        {
-            var count = ReadInt32();
-            if (0 == count)
-            {
-                return new List<BaseNode>();
-            }
-
-            var offset = ReadInt32();
-
-            // Reverse jump count and offset?
-            if (version <= 2)
-            {
-                ReadUnknownUseValue(1, context);
-            }
-            else
-            {
-                ReadUnknownUseValue(0, context);
-            }
-            ReadInt32();  // skip reverse jump pointer
-
-            // warn if caller is skipping anything else
-            SeekShouldPointHere(offset, context);
-            return ReadChildren(count, offset, context);
-        }
-
         internal List<BaseNode> ReadChildren(int count, int jumpListOffset, object context)
         {
             var nodes = new List<BaseNode>();
@@ -98,7 +71,7 @@ namespace SchmooTech.XWOpt
                 int nextNode = ReadInt32();
                 if (nextNode != 0)
                 {
-                    nodes.Add(ReadNodeAt(nextNode, context));
+                    nodes.Add(ReadNodeAt(nextNode, context, null));
                 }
             }
 
@@ -106,108 +79,66 @@ namespace SchmooTech.XWOpt
         }
 
         // Instantiates the correct node type based on IDs found.
-        public BaseNode ReadNodeAt(int offset, object context)
+        public BaseNode ReadNodeAt(int offset, object context, BaseNode parent)
         {
-            int preHeaderOffset = 0;
-
             if (nodeCache.ContainsKey(offset))
             {
                 return nodeCache[offset];
             }
 
             Seek(offset);
-            int majorId = ReadInt32();
-            int minorId = ReadInt32();
 
-            // Edge case: one block type doesn't start with major/minor type id and actually start with another offset.
-            // So peek ahead one more long and shuffle numbers where they go.
-            // This may not work if globalOffset is 0.
-            // Should be a pointer to an offset containing string "Tex00000" or similar.
-            int peek = ReadInt32();
-            if (majorId > globalOffset && minorId == (long)Major.Texture)
-            {
-                preHeaderOffset = majorId;
-                majorId = minorId;
-                minorId = peek;
-            }
-            else if (majorId > globalOffset && minorId == 0 && peek == 1)
-            {
-                // This is a weird subtype found in SHUTTLE.OPT
-                return new NamedNodeCollection(this, majorId);
-            }
-            else
-            {
-                BaseStream.Seek(-4, SeekOrigin.Current);
-            }
+            var nodeHeader = new NodeHeader(this, parent);
 
             // Figure out the type of node and build appropriate object.
             BaseNode node;
-            switch (majorId)
-            {
-                case (int)Major.Generic:
-                    switch (minorId)
-                    {
-                        case (int)GenericMinor.Branch:
-                            node = new NodeCollection(this) as BaseNode;
-                            break;
-                        case (int)GenericMinor.MeshVertex:
-                            node = MakeGenericNode(typeof(MeshVertices<>), new Type[] { Vector3T });
-                            break;
-                        case (int)GenericMinor.TextureVertex:
-                            node = MakeGenericNode(typeof(VertexUV<>), new Type[] { Vector2T });
-                            break;
-                        case (int)GenericMinor.TextureReferenceByName:
-                            node = new TextureReferenceByName(this) as BaseNode;
-                            break;
-                        case (int)GenericMinor.VertexNormal:
-                            node = MakeGenericNode(typeof(VertexNormals<>), new Type[] { Vector3T });
-                            break;
-                        case (int)GenericMinor.Hardpoint:
-                            node = MakeGenericNode(typeof(Hardpoint<>), new Type[] { Vector3T });
-                            break;
-                        case (int)GenericMinor.Transform:
-                            node = MakeGenericNode(typeof(RotationInfo<>), new Type[] { Vector3T });
-                            break;
-                        case (int)GenericMinor.MeshLod:
-                            node = new LodCollection(this) as BaseNode;
-                            break;
-                        case (int)GenericMinor.FaceList:
-                            node = MakeGenericNode(typeof(FaceList<>), new Type[] { Vector3T });
-                            break;
-                        case (int)GenericMinor.SkinSelector:
-                            node = new SkinCollection(this) as BaseNode;
-                            break;
-                        case (int)GenericMinor.MeshDescriptor:
-                            node = MakeGenericNode(typeof(PartDescriptor<>), new Type[] { Vector3T });
-                            break;
-                        case (int)GenericMinor.EngineGlow:
-                            node = MakeGenericNode(typeof(EngineGlow<>), new Type[] { Vector3T });
-                            break;
-                        default:
-                            logger?.Invoke("Found unknown node type " + majorId + " " + minorId + " at " + BaseStream.Position + " context:" + context);
-                            node = new BaseNode(this);
-                            break;
-                    }
-                    break;
 
-                case (int)Major.Texture:
-                    switch (minorId)
-                    {
-                        case (int)TextureMinor.Texture:
-                            node = new Texture(this, preHeaderOffset);
-                            break;
-                        case (int)TextureMinor.TextureWithAlpha:
-                            node = new Texture(this, preHeaderOffset);
-                            break;
-                        default:
-                            logger?.Invoke("Found unknown node type " + majorId + " " + minorId + " at " + BaseStream.Position + " context:" + context);
-                            node = new Texture(this, preHeaderOffset);
-                            break;
-                    }
+            switch(nodeHeader.NodeType)
+            {
+                case NodeType.Separator:
+                    node = new SeparatorNode(this, nodeHeader);
+                    break;
+                case NodeType.IndexedFaceSet:
+                    node = MakeGenericNode(typeof(FaceList<>), new Type[] { Vector3T }, nodeHeader);
+                    break;
+                case NodeType.VertexPosition:
+                    node = MakeGenericNode(typeof(MeshVertices<>), new Type[] { Vector3T }, nodeHeader);
+                    break;
+                case NodeType.Translation:
+                    node = MakeGenericNode(typeof(Translation<>), new Type[] { Vector3T }, nodeHeader);
+                    break;
+                case NodeType.UseTexture:
+                    node = new TextureReferenceByName(this, nodeHeader);
+                    break;
+                case NodeType.VertexNormal:
+                    node = MakeGenericNode(typeof(VertexNormals<>), new Type[] { Vector3T }, nodeHeader);
+                    break;
+                case NodeType.TextureVertex:
+                    node = MakeGenericNode(typeof(VertexUV<>), new Type[] { Vector2T }, nodeHeader);
+                    break;
+                case NodeType.Texture:
+                    node = new Texture(this, nodeHeader);
+                    break;
+                case NodeType.MeshLod:
+                    node = new LodCollection(this, nodeHeader);
+                    break;
+                case NodeType.Hardpoint:
+                    node = MakeGenericNode(typeof(Hardpoint<>), new Type[] { Vector3T }, nodeHeader);
+                    break;
+                case NodeType.Pivot:
+                    node = MakeGenericNode(typeof(RotationInfo<>), new Type[] { Vector3T }, nodeHeader);
+                    break;
+                case NodeType.CamoSwitch:
+                    node = new SkinCollection(this, nodeHeader);
+                    break;
+                case NodeType.ComponentInfo:
+                    node = MakeGenericNode(typeof(PartDescriptor<>), new Type[] { Vector3T }, nodeHeader);
                     break;
                 default:
-                    node = new BaseNode(this);
+                    logger?.Invoke("Found unknown node type " + nodeHeader.NodeType + " " + nodeHeader.Name + " at " + BaseStream.Position + " context:" + context);
+                    node = new BaseNode(this, nodeHeader);
                     break;
+
             }
 
             nodeCache[offset] = node;
@@ -277,19 +208,12 @@ namespace SchmooTech.XWOpt
         }
 
         // Create OptNodes with reflection avoids generic parameter explosion.
-        BaseNode MakeGenericNode(Type nodeType, Type[] GenericParams, object constructorArgs = null)
+        BaseNode MakeGenericNode(Type nodeType, Type[] GenericParams, NodeHeader nodeHeader)
         {
             var closedGeneric = nodeType.MakeGenericType(GenericParams);
 
-            if (null != constructorArgs)
-            {
-                return closedGeneric.GetConstructor(new Type[] { this.GetType(), constructorArgs.GetType() }).Invoke(new object[] { this, constructorArgs }) as BaseNode;
-            }
-            else
-            {
-                var cotr = closedGeneric.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[] { this.GetType() }, null);
-                return cotr.Invoke(new object[] { this }) as BaseNode;
-            }
+            var ctor = closedGeneric.GetConstructor(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic, null, System.Reflection.CallingConventions.HasThis, new Type[] { this.GetType(), typeof(NodeHeader) }, null);
+            return ctor.Invoke(new object[] { this, nodeHeader }) as BaseNode;
         }
 
         internal string ReadString(int maxLen)

@@ -23,20 +23,15 @@ namespace SchmooTech.XWOpt.OptNode
 {
     public class TextureReferenceByName : BaseNode
     {
-        private string name;
-        private int id;
+        public string TextureName { get; set; }
 
-        public string Name { get => name; set => name = value; }
-        public int Id { get => id; set => id = value; }
-
-        internal TextureReferenceByName(OptReader reader) : base(reader)
+        internal TextureReferenceByName(OptReader reader, NodeHeader nodeHeader) : base(reader, nodeHeader)
         {
-            reader.ReadUnknownUseValue(0, this);
-            reader.ReadUnknownUseValue(0, this);
-            id = reader.ReadInt32();
-
-            reader.FollowPointerToNextByte(this);
-            name = reader.ReadString(9);
+            if (nodeHeader.DataAddress != 0)
+            {
+                reader.Seek(nodeHeader.DataAddress);
+                TextureName = reader.ReadString(50);
+            }
         }
     }
 }

@@ -19,29 +19,16 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-using SchmooTech.XWOpt.OptNode;
-using UnityEngine;
-
-namespace SchmooTech.XWOptUnity
+namespace SchmooTech.XWOpt.OptNode
 {
-    class HardpointFactory
+    /// <summary>
+    /// Common type for all types of nodes in an OPT file.
+    /// </summary>
+    public class SeparatorNode : BaseNode
     {
-        CraftFactory Craft { get; set; }
-
-        internal HardpointFactory(CraftFactory part)
+        internal SeparatorNode(OptReader opt, NodeHeader header) : base(opt, header)
         {
-            Craft = part;
-        }
 
-        internal GameObject MakeHardpoint(GameObject parent, Hardpoint<Vector3> hardpointNode, PartDescriptor<Vector3> partDescriptor, RotationInfo<Vector3> rotationInfo)
-        {
-            var hardpointObj = Object.Instantiate(Craft.HardpointBase) as GameObject;
-            hardpointObj.name = hardpointNode.WeaponType.ToString();
-            Helpers.AttachTransform(parent, hardpointObj, hardpointNode.Location - rotationInfo.Offset);
-
-            Craft.ProcessHardpoint?.Invoke(hardpointObj, partDescriptor, hardpointNode);
-
-            return hardpointObj;
         }
     }
 }
